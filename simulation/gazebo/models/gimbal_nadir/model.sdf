@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="gimbal_nadir">
+    <!-- Fixed (non-actuated) nadir camera pod. The single base_link both mounts
+         to the drone and carries the camera; there are deliberately no
+         roll/pitch/yaw joints (cf. gimbal_small_3d) so the camera is rigidly
+         down-pointing and camera_live_feed.py's nadir projection holds. -->
+    <link name="base_link">
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00001</iyy>
+          <iyz>0</iyz>
+          <izz>0.00001</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Small visible body so the pod (and its down-facing lens) is locatable
+           in the GUI. No collision: a downward camera should never collide. -->
+      <visual name="housing_visual">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.03</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+          <specular>0.05 0.05 0.05 1</specular>
+        </material>
+      </visual>
+      <visual name="lens_visual">
+        <pose>0 0 -0.018 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.012</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.0 0.0 0.05 1</ambient>
+          <diffuse>0.0 0.0 0.1 1</diffuse>
+          <specular>0.4 0.4 0.5 1</specular>
+        </material>
+      </visual>
+
+      <!-- Calibration-matched nadir camera.
+           Orientation: base_link is mounted aligned with the drone body (see
+           iris_uav fixed joint). The pose rpy = (-90, 90, 0) deg rotates the
+           Gazebo camera frame (looks +X, up +Z, right -Y) so that, with the
+           drone level and facing +X (=East in this world's ENU):
+             optical axis -> -Z world (straight down / nadir)
+             image right  -> +X world (East)
+             image up     -> +Y world (North)  =>  image down -> South
+           which is exactly the mapping project_pixel_to_ground_ned() assumes.
+           Intrinsics (fx,fy,cx,cy) and distortion come verbatim from
+           calibration/camera_intrinsics_latest.json; horizontal_fov is derived
+           from fx (2*atan((w/2)/fx)) and kept consistent for the frustum. -->
+      <sensor name="camera" type="camera">
+        <gz_frame_id>gimbal_nadir/base_link/camera</gz_frame_id>
+        <pose degrees="true">0 0 0 -90 90 0</pose>
+        <topic>/drone/camera</topic>
+        <update_rate>15</update_rate>
+        <always_on>1</always_on>
+        <visualize>1</visualize>
+        <camera>
+          <horizontal_fov>1.2582621436</horizontal_fov>
+          <image>
+            <width>1920</width>
+            <height>1080</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>2000</far>
+          </clip>
+          <lens>
+            <intrinsics>
+              <fx>1319.071398</fx>
+              <fy>1407.4984</fy>
+              <cx>870.93493</cx>
+              <cy>533.095324</cy>
+              <s>0</s>
+            </intrinsics>
+          </lens>
+          <!-- Brown-Conrady (plumb_bob) distortion matching the real lens so the
+               sim image carries the same distortion camera_live_feed.py removes
+               with cv2.undistortPoints. To run the pipeline against a clean
+               pinhole instead, comment this block out and pass --no-undistort. -->
+          <distortion>
+            <k1>0.4353804318</k1>
+            <k2>-0.2461908227</k2>
+            <k3>0.111509133</k3>
+            <p1>-0.0688481028</p1>
+            <p2>-0.0508214506</p2>
+            <center>0.5 0.5</center>
+          </distortion>
+        </camera>
+      </sensor>
+    </link>
+  </model>
+</sdf>
