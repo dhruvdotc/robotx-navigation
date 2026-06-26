@@ -1,8 +1,19 @@
 #!/usr/bin/env python3
-"""Stage-A RGB color detection pipeline for USB camera feeds."""
+"""Stage-A RGB color detection pipeline for USB camera feeds.
+
+Frame sources: live USB camera (default), a single video file
+(``--video-path``), or a folder of still images (``--image-dir``).
+
+Pixel detections are projected to a local ground frame (NED metres) and an
+absolute GPS coordinate using the camera intrinsics. Intrinsics are resolved
+with the precedence:  CLI override  >  calibration file  >  legacy 1500 fallback.
+"""
 
 import argparse
 import csv
+import glob
+import json
+import math
 import os
 import platform
 import sys
@@ -32,6 +43,19 @@ class Track:
     missed: int
 
 
+@dataclass
+class Intrinsics:
+    """Resolved camera intrinsics plus the source they came from."""
+
+    fx: float
+    fy: float
+    cx: float
+    cy: float
+    dist: np.ndarray  # Brown-Conrady (k1, k2, p1, p2, k3); zeros = pinhole.
+    K: np.ndarray
+    source: str
+
+
 COLOR_RANGES: dict[str, list[tuple[tuple[int, int, int], tuple[int, int, int]]]] = {}
 COLOR_DRAW = {
     "red": (0, 0, 255),
@@ -39,6 +63,9 @@ COLOR_DRAW = {
     "blue": (255, 100, 0),
     "unknown": (255, 255, 255),
 }
+
+DEFAULT_CALIBRATION = "calibration/camera_intrinsics_latest.json"
+LEGACY_FOCAL_PX = 1500.0
 
 
 def make_kalman(init_x: float, init_y: float) -> cv2.KalmanFilter:
@@ -52,6 +79,103 @@ def make_kalman(init_x: float, init_y: float) -> cv2.KalmanFilter:
     kf.errorCovPost = np.eye(4, dtype=np.float32)
     kf.statePost = np.array([[init_x], [init_y], [0], [0]], np.float32)
     return kf
+
+
+def load_calibration(path: str) -> dict | None:
+    """Load checkerboard calibration JSON. Returns None if missing/unreadable."""
+    if not path or not os.path.exists(path):
+        print(f"[WARN] Calibration file not found: {path}; will use CLI/legacy intrinsics.")
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        # Touch the keys we rely on so a malformed file fails here, not later.
+        _ = data["K"], data["fx"], data["fy"], data["cx"], data["cy"]
+        _ = data["distortion"]["coefficients"]
+        rms = data.get("calibration", {}).get("rms_reprojection_error", float("nan"))
+        print(
+            f"[INFO] Loaded camera calibration from {path} "
+            f"(fx={data['fx']:.2f}, fy={data['fy']:.2f}, cx={data['cx']:.2f}, "
+            f"cy={data['cy']:.2f}, RMS={rms:.3f}px)"
+        )
+        return data
+    except (KeyError, ValueError, OSError) as exc:
+        print(f"[WARN] Failed to parse calibration {path}: {exc}; using CLI/legacy intrinsics.")
+        return None
+
+
+def resolve_intrinsics(
+    args: argparse.Namespace, calib: dict | None, width: int, height: int
+) -> Intrinsics:
+    """Apply precedence CLI override > calibration file > legacy 1500 fallback.
+
+    Any explicit CLI intrinsic (--fx-px/--fy-px/--cx-px/--cy-px) switches to
+    manual mode: the calibration file (including its distortion model) is
+    bypassed entirely, reproducing the historical hard-coded pinhole path.
+    """
+    cli_keys = [args.fx_px, args.fy_px, args.cx_px, args.cy_px]
+    manual = any(v is not None for v in cli_keys)
+
+    if manual:
+        fx = args.fx_px if args.fx_px is not None else LEGACY_FOCAL_PX
+        fy = args.fy_px if args.fy_px is not None else LEGACY_FOCAL_PX
+        cx = args.cx_px if args.cx_px is not None else width / 2.0
+        cy = args.cy_px if args.cy_px is not None else height / 2.0
+        dist = np.zeros(5, dtype=np.float64)
+        source = "cli-manual"
+    elif calib is not None:
+        fx = float(calib["fx"])
+        fy = float(calib["fy"])
+        cx = float(calib["cx"])
+        cy = float(calib["cy"])
+        dist = np.array(calib["distortion"]["coefficients"][:5], dtype=np.float64)
+        source = "calibration-file"
+        if args.no_undistort:
+            dist = np.zeros(5, dtype=np.float64)
+            source = "calibration-file(no-undistort)"
+    else:
+        fx = fy = LEGACY_FOCAL_PX
+        cx = width / 2.0
+        cy = height / 2.0
+        dist = np.zeros(5, dtype=np.float64)
+        source = "legacy-1500"
+
+    K = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]], dtype=np.float64)
+    return Intrinsics(fx=fx, fy=fy, cx=cx, cy=cy, dist=dist, K=K, source=source)
+
+
+def project_pixel_to_ground_ned(
+    px: float, py: float, intr: Intrinsics, altitude_m: float
+) -> tuple[float, float]:
+    """Project a full-frame pixel to a ground point in local NED metres.
+
+    Assumes a nadir-pointing (straight-down) camera at ``altitude_m`` above a
+    flat ground plane, with image +x -> East, image +y -> South, no yaw.
+    cv2.undistortPoints removes the Brown-Conrady lens distortion and returns
+    normalised image coordinates, which scale by altitude to ground offsets.
+    """
+    pts = np.array([[[float(px), float(py)]]], dtype=np.float64)
+    undistorted = cv2.undistortPoints(pts, intr.K, intr.dist)
+    x_n = float(undistorted[0, 0, 0])
+    y_n = float(undistorted[0, 0, 1])
+    north = -y_n * altitude_m
+    east = x_n * altitude_m
+    return north, east
+
+
+def ned_to_gps(
+    north_m: float, east_m: float, origin_lat: float, origin_lon: float
+) -> tuple[float, float]:
+    """Convert a local NED offset (metres) to absolute lat/lon (deg).
+
+    Equirectangular approximation about the origin. Without live telemetry the
+    origin is a configurable placeholder (default 0,0); the meaningful,
+    calibration-sensitive quantity is the NED offset in metres.
+    """
+    earth_r = 6378137.0  # WGS84 equatorial radius (m).
+    d_lat = north_m / earth_r
+    d_lon = east_m / (earth_r * math.cos(math.radians(origin_lat)))
+    return origin_lat + math.degrees(d_lat), origin_lon + math.degrees(d_lon)
 
 
 def open_camera(camera_index: int, width: int, height: int) -> cv2.VideoCapture:
@@ -82,16 +206,93 @@ def find_working_camera(max_index: int, width: int, height: int) -> int | None:
     return None
 
 
+def frame_source(args: argparse.Namespace):
+    """Yield (frame_bgr, label) tuples from an image dir, video file, or camera."""
+    if args.image_dir is not None:
+        exts = (".jpg", ".jpeg", ".png", ".bmp")
+        paths = sorted(
+            p for p in glob.glob(os.path.join(args.image_dir, "*"))
+            if p.lower().endswith(exts)
+        )
+        if not paths:
+            print(f"No images found in {args.image_dir} (looked for {exts}).")
+            return
+        print(f"Reading {len(paths)} image(s) from {args.image_dir}")
+        for path in paths:
+            frame = cv2.imread(path)
+            if frame is None:
+                print(f"[WARN] Could not read {path}; skipping.")
+                continue
+            yield frame, path
+        return
+
+    if args.video_path is not None:
+        cap = cv2.VideoCapture(args.video_path)
+        if not cap.isOpened():
+            print(f"Failed to open video {args.video_path}.")
+            return
+        print(f"Reading video {args.video_path}")
+        idx = 0
+        try:
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                yield frame, f"{args.video_path}#f{idx}"
+                idx += 1
+        finally:
+            cap.release()
+        return
+
+    # Live camera mode.
+    if args.camera_index is None:
+        print(f"Probing camera indices 0..{args.max_index}...")
+        camera_index = find_working_camera(args.max_index, args.width, args.height)
+        if camera_index is None:
+            print("No working camera stream found.")
+            print("On macOS, grant camera permission to your terminal/IDE and retry.")
+            return
+        print(f"Using camera index: {camera_index}")
+    else:
+        camera_index = args.camera_index
+
+    cap = open_camera(camera_index, args.width, args.height)
+    if not cap.isOpened():
+        print(f"Failed to open camera index {camera_index}.")
+        return
+    try:
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                print("Frame read failed. Camera may have disconnected.")
+                break
+            yield frame, ""
+    finally:
+        cap.release()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Stage-A object-first + HSV color classification.")
+    # Frame source (mutually exclusive in spirit; camera is the default).
     parser.add_argument("--camera-index", type=int, default=None)
     parser.add_argument("--max-index", type=int, default=10)
+    parser.add_argument("--video-path", type=str, default=None, help="Read frames from a video file.")
+    parser.add_argument("--image-dir", type=str, default=None, help="Read frames from a folder of images.")
+    parser.add_argument("--no-display", action="store_true", help="Disable the OpenCV preview window.")
     parser.add_argument("--width", type=int, default=1920)
     parser.add_argument("--height", type=int, default=1080)
     parser.add_argument("--det-width", type=int, default=960)
     parser.add_argument("--det-height", type=int, default=540)
     parser.add_argument("--altitude-m", type=float, default=10.0)
-    parser.add_argument("--fx-px", type=float, default=1500.0)
+    # Intrinsics: CLI override > calibration file > legacy 1500 fallback.
+    parser.add_argument("--fx-px", type=float, default=None)
+    parser.add_argument("--fy-px", type=float, default=None)
+    parser.add_argument("--cx-px", type=float, default=None)
+    parser.add_argument("--cy-px", type=float, default=None)
+    parser.add_argument("--calibration-file", type=str, default=DEFAULT_CALIBRATION)
+    parser.add_argument("--no-undistort", action="store_true", help="Skip lens distortion correction.")
+    parser.add_argument("--origin-lat", type=float, default=0.0, help="Origin latitude for NED->GPS.")
+    parser.add_argument("--origin-lon", type=float, default=0.0, help="Origin longitude for NED->GPS.")
     parser.add_argument("--target-diameter-m", type=float, default=0.32)
     parser.add_argument("--kernel-size", type=int, default=5)
     parser.add_argument("--roi-margin", type=float, default=0.10)
@@ -111,11 +312,12 @@ def find_detections(
     hsv_full: np.ndarray,
     roi: tuple[int, int, int, int],
     args: argparse.Namespace,
+    intr: Intrinsics,
 ) -> list[Detection]:
     detections: list[Detection] = []
     h_det, w_det = frame_det.shape[:2]
     x0, y0, x1, y1 = roi
-    expected_d = args.fx_px * args.target_diameter_m / max(args.altitude_m, 0.1)
+    expected_d = intr.fx * args.target_diameter_m / max(args.altitude_m, 0.1)
     min_d = 0.5 * expected_d
     max_d = 2.0 * expected_d
     kernel = np.ones((args.kernel_size, args.kernel_size), np.uint8)
@@ -277,40 +479,40 @@ def main() -> int:
     csv_path = os.path.join(args.log_dir, "detections.csv")
     csv_exists = os.path.exists(csv_path)
 
-    if args.camera_index is None:
-        print(f"Probing camera indices 0..{args.max_index}...")
-        camera_index = find_working_camera(args.max_index, args.width, args.height)
-        if camera_index is None:
-            print("No working camera stream found.")
-            print("On macOS, grant camera permission to your terminal/IDE and retry.")
-            return 1
-        print(f"Using camera index: {camera_index}")
-    else:
-        camera_index = args.camera_index
+    calib = load_calibration(args.calibration_file)
+    intr = resolve_intrinsics(args, calib, args.width, args.height)
+    print(
+        f"[INFO] Active intrinsics [{intr.source}]: "
+        f"fx={intr.fx:.2f} fy={intr.fy:.2f} cx={intr.cx:.2f} cy={intr.cy:.2f} "
+        f"dist={np.round(intr.dist, 4).tolist()}"
+    )
 
-    cap = open_camera(camera_index, args.width, args.height)
-    if not cap.isOpened():
-        print(f"Failed to open camera index {camera_index}.")
-        return 1
+    file_mode = args.image_dir is not None or args.video_path is not None
+    display = not args.no_display and not file_mode
 
     tracks = []
     next_track_id = 1
-    window_name = f"Stage-A RGB Detection (camera {camera_index})"
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    window_name = "Stage-A RGB Detection"
+    if display:
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
+    frame_count = 0
+    detection_count = 0
+    gen = frame_source(args)
 
     with open(csv_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not csv_exists:
             writer.writerow(
-                ["timestamp", "image_path", "track_id", "color", "confidence", "cx", "cy", "x", "y", "w", "h"]
+                [
+                    "timestamp", "image_path", "track_id", "color", "confidence",
+                    "cx", "cy", "x", "y", "w", "h",
+                    "north_m", "east_m", "lat", "lon", "altitude_m", "intrinsics_source",
+                ]
             )
 
-        while True:
-            ok, frame_full = cap.read()
-            if not ok:
-                print("Frame read failed. Camera may have disconnected.")
-                break
-
+        for frame_full, label in gen:
+            frame_count += 1
             frame_full = apply_clahe_to_v(frame_full)
             frame_det = cv2.resize(frame_full, (args.det_width, args.det_height), interpolation=cv2.INTER_AREA)
             hsv_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2HSV)
@@ -320,25 +522,35 @@ def main() -> int:
             margin_y = int(args.roi_margin * args.det_height)
             roi = (margin_x, margin_y, args.det_width - margin_x, args.det_height - margin_y)
 
-            detections = find_detections(frame_full, frame_det, hsv_det, hsv_full, roi, args)
+            detections = find_detections(frame_full, frame_det, hsv_det, hsv_full, roi, args, intr)
             tracks, assigned, next_track_id = update_tracks(
                 tracks, detections, args.track_gate_px, args.max_track_missed, next_track_id
             )
 
-            frame_out = frame_full.copy()
+            frame_out = frame_full.copy() if display else None
             image_path = ""
             if assigned:
-                ts = time.time()
-                image_path = os.path.join(args.log_dir, f"frame_{int(ts * 1000)}.jpg")
-                cv2.imwrite(image_path, frame_full)
+                if file_mode:
+                    # Reference the original source frame instead of saving a copy.
+                    image_path = label
+                else:
+                    ts = time.time()
+                    image_path = os.path.join(args.log_dir, f"frame_{int(ts * 1000)}.jpg")
+                    cv2.imwrite(image_path, frame_full)
 
             for det, track_id, (sx, sy) in assigned:
+                detection_count += 1
+                north_m, east_m = project_pixel_to_ground_ned(sx, sy, intr, args.altitude_m)
+                lat, lon = ned_to_gps(north_m, east_m, args.origin_lat, args.origin_lon)
                 x, y, w, h = det.bbox_full
-                color_bgr = COLOR_DRAW[det.color]
-                cv2.rectangle(frame_out, (x, y), (x + w, y + h), color_bgr, 2)
-                cv2.circle(frame_out, (int(sx), int(sy)), 4, color_bgr, -1)
-                label = f"{det.color} t{track_id} conf={det.confidence:.2f}"
-                cv2.putText(frame_out, label, (x, max(20, y - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color_bgr, 2)
+
+                if display:
+                    color_bgr = COLOR_DRAW[det.color]
+                    cv2.rectangle(frame_out, (x, y), (x + w, y + h), color_bgr, 2)
+                    cv2.circle(frame_out, (int(sx), int(sy)), 4, color_bgr, -1)
+                    label_txt = f"{det.color} t{track_id} conf={det.confidence:.2f}"
+                    cv2.putText(frame_out, label_txt, (x, max(20, y - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color_bgr, 2)
+
                 writer.writerow(
                     [
                         f"{time.time():.3f}",
@@ -352,19 +564,34 @@ def main() -> int:
                         y,
                         w,
                         h,
+                        f"{north_m:.3f}",
+                        f"{east_m:.3f}",
+                        f"{lat:.8f}",
+                        f"{lon:.8f}",
+                        f"{args.altitude_m:.2f}",
+                        intr.source,
                     ]
+                )
+                src_tag = os.path.basename(label) if label else "cam"
+                print(
+                    f"[GPS] {src_tag} t{track_id} {det.color} conf={det.confidence:.2f} "
+                    f"px=({sx:.0f},{sy:.0f}) NED=N{north_m:+.2f}m E{east_m:+.2f}m "
+                    f"-> lat={lat:.7f} lon={lon:.7f}"
                 )
             f.flush()
 
-            cv2.imshow(window_name, frame_out)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q"):
-                break
-            if key == ord("c"):
-                calibrate_sv_threshold(frame_det, args.calib_color)
+            if display:
+                cv2.imshow(window_name, frame_out)
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord("q"):
+                    break
+                if key == ord("c"):
+                    calibrate_sv_threshold(frame_det, args.calib_color)
 
-    cap.release()
-    cv2.destroyAllWindows()
+    gen.close()
+    if display:
+        cv2.destroyAllWindows()
+    print(f"[INFO] Processed {frame_count} frame(s), {detection_count} detection(s). Log: {csv_path}")
     return 0
 
 
