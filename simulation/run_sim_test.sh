@@ -37,15 +37,15 @@ AUTO_FLY=1
 RECORD=1
 COURSE=1
 
-for arg in "$@"; do
-  case "$arg" in
-    --course)   shift; COURSE="$1" ;;
-    --course=*) COURSE="${arg#--course=}" ;;
-    --gui)       HEADLESS=0 ;;
-    --no-fly)    AUTO_FLY=0 ;;
-    --no-record) RECORD=0 ;;
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --course)   COURSE="$2"; shift 2 ;;
+    --course=*) COURSE="${1#--course=}"; shift ;;
+    --gui)       HEADLESS=0; shift ;;
+    --no-fly)    AUTO_FLY=0; shift ;;
+    --no-record) RECORD=0; shift ;;
     -h|--help)   grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) echo "Unknown arg: $arg (try --help)" >&2; exit 2 ;;
+    *) echo "Unknown arg: $1 (try --help)" >&2; exit 2 ;;
   esac
 done
 
