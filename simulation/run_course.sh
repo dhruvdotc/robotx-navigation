@@ -182,6 +182,22 @@ PY
 trap cleanup INT TERM EXIT
 
 # --------------------------------------------------------------------------- #
+# Pre-flight: kill any stale simulation processes from a previous run.
+# A leftover gz instance will advertise /drone/camera immediately, making the
+# readiness check pass in <2 s while the NEW world hasn't loaded at all, and
+# SITL then fights the stale gz for the FDM port (UDP 9002).
+# --------------------------------------------------------------------------- #
+pmsg "Pre-flight: clearing stale simulation processes..."
+pkill -f "gz sim"                           2>/dev/null || true
+pkill -f "arducopter"                       2>/dev/null || true
+pkill -f "mavproxy.py"                      2>/dev/null || true
+pkill -f "ros_gz_image image_bridge"        2>/dev/null || true
+pkill -f "accuracy_verify.py"               2>/dev/null || true
+pkill -f "camera_live_feed.py"              2>/dev/null || true
+pkill -f "gps_display.py"                   2>/dev/null || true
+sleep 2   # give processes time to die before we check topic list
+
+# --------------------------------------------------------------------------- #
 # 1. Gazebo
 # --------------------------------------------------------------------------- #
 GZ_LOG="${RUN_DIR}/gz.log"
@@ -194,7 +210,8 @@ else
 fi
 GZ_PID=$!
 
-pmsg "      Waiting for /drone/camera topic..."
+pmsg "      Waiting for /drone/camera topic (world + ArduPilot plugin load ~30-60 s)..."
+GZ_START=$(date +%s)
 ready=0
 for _ in $(seq 1 120); do
   if gz topic -l 2>/dev/null | grep -qx "/drone/camera"; then ready=1; break; fi
@@ -203,9 +220,17 @@ for _ in $(seq 1 120); do
   fi
   sleep 1
 done
-[ "$ready" -eq 1 ] \
-  && pmsg "      Gazebo up: /drone/camera publishing." \
-  || pmsg "      WARN: camera topic not seen; continuing anyway."
+GZ_ELAPSED=$(( $(date +%s) - GZ_START ))
+if [ "$ready" -eq 1 ]; then
+  pmsg "      Gazebo up in ${GZ_ELAPSED}s: /drone/camera publishing."
+  if [ "$GZ_ELAPSED" -lt 5 ]; then
+    pmsg "      WARN: Gazebo appeared ready in <5 s -- possible stale process survived."
+    pmsg "      Waiting an extra 10 s for fresh instance to stabilize..."
+    sleep 10
+  fi
+else
+  pmsg "      WARN: camera topic not seen after ${GZ_ELAPSED}s; continuing anyway."
+fi
 
 # --------------------------------------------------------------------------- #
 # 2. SITL
@@ -264,22 +289,42 @@ fi
 # --------------------------------------------------------------------------- #
 echo
 pmsg "Waiting for SITL GPS/EKF fix (this takes 30-90 s)..."
-python3 - <<'PY'
-import sys, time
+GPS_READY_FILE="${RUN_DIR}/.gps_ready"
+python3 - "$GPS_READY_FILE" <<'PY'
+import sys, time, os
 from pymavlink import mavutil
+ready_file = sys.argv[1]
 try:
     m = mavutil.mavlink_connection("udp:127.0.0.1:14552")
-    m.wait_heartbeat(timeout=90)
+    hb = m.wait_heartbeat(timeout=90)
+    if hb is None:
+        print("ERROR: no SITL heartbeat in 90 s -- SITL may have crashed or failed to",
+              "connect to Gazebo FDM port (UDP 9002). Check the SITL console window.",
+              file=sys.stderr)
+        sys.exit(1)
     deadline = time.time() + 120
     while time.time() < deadline:
         msg = m.recv_match(type="GLOBAL_POSITION_INT", blocking=True, timeout=3)
         if msg and msg.lat != 0:
             print(f"   SITL READY: GPS lat={msg.lat/1e7:.6f}  lon={msg.lon/1e7:.6f}")
+            open(ready_file, "w").close()
             sys.exit(0)
-    print("WARN: GPS readiness timed out.", file=sys.stderr)
+    print("ERROR: SITL heartbeat OK but GPS position never arrived in 120 s.",
+          "SITL may not be connected to Gazebo FDM (UDP 9002).", file=sys.stderr)
+    sys.exit(1)
+except SystemExit:
+    raise
 except Exception as e:
-    print(f"WARN: readiness probe failed: {e}", file=sys.stderr)
+    print(f"ERROR: readiness probe failed: {e}", file=sys.stderr)
+    sys.exit(1)
 PY
+if [ ! -f "$GPS_READY_FILE" ]; then
+  pmsg "ABORT: SITL did not get a GPS fix. Nothing to fly."
+  pmsg "       Window 2 (SITL console) will show the ArduCopter error."
+  pmsg "       Common causes: Gazebo ArduPilot plugin didn't finish loading;"
+  pmsg "       re-run once Gazebo has fully appeared before SITL starts."
+  exit 1
+fi
 
 # Now open the GPS display -- probe has released udp:14552 so no port conflict.
 if [ "$VISUAL" -eq 1 ]; then
