@@ -44,6 +44,7 @@ Each run creates `simulation/sim_tests/run_N/` with:
 | `gz.log` | Gazebo and SITL stdout/stderr |
 | `verify.log` | accuracy_verify.py console output |
 | `recording.mp4` | Screen recording (--gui mode + ffmpeg available) |
+| `map.png` | Top-down detection map (detected vs ground-truth positions, error lines, runtime) |
 
 The run number increments automatically. A minimum 15-second sustained flight is enforced - short runs are flagged in the report but the folder is still saved.
 

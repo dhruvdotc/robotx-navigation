@@ -106,6 +106,13 @@ print(f"[INFO] summary.json updated with run={run_n}")
 PY
   fi
 
+  # Generate the detection map diagram
+  if python3 "${REPO_ROOT}/simulation/plot_run.py" "$RUN_DIR" 2>/dev/null; then
+    echo "[run_${RUN_N}] map.png written."
+  else
+    echo "[run_${RUN_N}] WARN: plot_run.py failed (matplotlib installed?)"
+  fi
+
   echo "[run_${RUN_N}] Done. Outputs in: $RUN_DIR"
   ls -lh "$RUN_DIR" 2>/dev/null || true
 }
