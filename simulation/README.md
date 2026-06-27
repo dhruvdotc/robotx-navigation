@@ -4,6 +4,81 @@ An ArduPilot-SITL drone flies a nadir camera over RobotX-spec buoy courses on an
 
 ---
 
+## Quick Start
+
+### Headless — terminal progress updates, no windows
+
+```bash
+bash simulation/run_course.sh --course 1   # straight channel  (~60 s)
+bash simulation/run_course.sh --course 2   # lawnmower survey  (~3 min)
+bash simulation/run_course.sh --course 3   # L-shaped dogleg   (~90 s)
+```
+
+Runs entirely in the terminal. Progress is printed every 5 seconds with a
+percentage and waypoint label; a milestone line appears when each waypoint is
+reached. All outputs auto-saved to `simulation/sim_tests/run_N/` on completion.
+
+Sample output:
+```
+[10:24:22] === FLIGHT IN PROGRESS | Course 1: Straight Navigation Channel | 4 waypoints ===
+
+[10:24:27]   0% | 0/4 done | waiting for GPS / arming...
+[10:24:32]   0% | 0/4 done | armed -- climbing to altitude...
+[10:24:40]   0% | 0/4 done | flying to: gate 1
+[10:24:48]  25% | waypoint 1/4 reached: gate 1
+[10:24:53]  25% | 1/4 done | flying to: gate 2
+[10:25:06]  50% | waypoint 2/4 reached: gate 2
+[10:25:21]  75% | waypoint 3/4 reached: gate 3
+[10:25:34] 100% | waypoint 4/4 reached: light buoy
+```
+
+### Visual — 4 windows open simultaneously
+
+```bash
+bash simulation/run_course.sh --course 1 --visual
+bash simulation/run_course.sh --course 2 --visual
+bash simulation/run_course.sh --course 3 --visual
+```
+
+Requires WSLg / X11 (`$DISPLAY` set) and `xterm`. Opens four windows:
+
+| Window | What you see |
+|--------|-------------|
+| **Gazebo 3D view** | Animated VRX ocean + gate buoys + drone flight |
+| **SITL console** | Live ArduCopter arm / mode / GPS log |
+| **Camera detector** | `camera_live_feed.py` text detections + OpenCV overlay window |
+| **GPS coordinates** | Live lat / lon / alt AGL / speed / mode (updates every second) |
+
+Auto-fly begins 10 seconds after GPS fix so you have time to arrange windows.
+All outputs auto-saved to `simulation/sim_tests/run_N/` on Ctrl-C or flight end.
+
+### Extra flags (both modes)
+
+| Flag | Effect |
+|------|--------|
+| `--no-fly` | Start sim without auto-flight; fly manually with `fly_course.py` |
+| `--speed N` | Transit speed in m/s (default 1.5) |
+
+---
+
+## Run Output Folder
+
+Every run saves to `simulation/sim_tests/run_N/` (N auto-increments):
+
+| File | Contents |
+|------|----------|
+| `detections.csv` | Per-frame buoy GPS projections |
+| `accuracy_report.md` | Cross-referenced vs ground-truth buoy positions |
+| `summary.json` | Machine-readable metrics: duration, mean error, buoys found |
+| `gz.log` | Gazebo + SITL stdout/stderr |
+| `fly.log` | fly_course.py output |
+| `verify.log` | accuracy_verify.py output |
+| `camera.log` | camera_live_feed.py output (visual mode only) |
+| `gps.log` | GPS display stream (visual mode only) |
+| `map.png` | Top-down detection diagram: detected vs GT positions, error lines |
+
+---
+
 ## The Three Courses
 
 ### Course 1 - Straight Navigation Channel
@@ -25,7 +100,7 @@ Three red/green gate pairs along a straight East axis, plus a scan-the-code ligh
 **Flight path:** Straight East at N=0, hover 4s per gate.
 
 ```bash
-bash simulation/run_sim_test.sh --course 1
+bash simulation/run_course.sh --course 1
 ```
 
 ---
@@ -49,7 +124,7 @@ Seven buoys scattered across a 60x30 m open-water field with no channel structur
 **Flight path:** Three East-West strips at N=-15, N=0, N=+15 (lawnmower). Every buoy falls within 8 m of nadir at 10 m AGL.
 
 ```bash
-bash simulation/run_sim_test.sh --course 2
+bash simulation/run_course.sh --course 2
 ```
 
 ---
@@ -75,47 +150,12 @@ Two-leg L-shaped course: two gates going East, then a 90-degree right turn and t
 **Flight path:** East to corner at (E=35, N=0), then pivot North to (E=35, N=42).
 
 ```bash
-bash simulation/run_sim_test.sh --course 3
+bash simulation/run_course.sh --course 3
 ```
 
 ---
 
-## Sim Tests - Automated Output Collection
-
-`run_sim_test.sh` launches everything in one command and saves all outputs to `simulation/sim_tests/run_N/` (auto-incrementing run number):
-
-```bash
-bash simulation/run_sim_test.sh --course 1          # headless + auto fly
-bash simulation/run_sim_test.sh --course 2 --gui    # Gazebo window + screen recording
-bash simulation/run_sim_test.sh --course 3 --no-fly # launch only, fly manually
-```
-
-**Flags:**
-
-| Flag | Effect |
-|------|--------|
-| `--course 1/2/3` | Select course world and flight path (default: 1) |
-| `--gui` | Show Gazebo window instead of headless server |
-| `--no-fly` | Start sim but don't auto-launch fly_course.py |
-| `--no-record` | Skip ffmpeg screen recording even if available |
-
-**Each `run_N/` folder contains:**
-
-| File | Contents |
-|------|----------|
-| `detections.csv` | Per-frame buoy detections with GPS estimates |
-| `accuracy_report.md` | Cross-referenced vs ground-truth buoy positions |
-| `summary.json` | Machine-readable metrics: duration, mean error, buoys found, pass/fail, course |
-| `gz.log` | Gazebo and SITL stdout/stderr |
-| `verify.log` | accuracy_verify.py console output |
-| `map.png` | Top-down detection map: detected vs GT positions, error lines, runtime |
-| `recording.mp4` | Screen recording (--gui mode + ffmpeg available) |
-
-A minimum 15-second sustained flight is enforced. Short runs are flagged in the report but the folder is still saved.
-
----
-
-## Run Manually (advanced)
+## Advanced / Manual Operation
 
 **Basic Gazebo + SITL launch:**
 

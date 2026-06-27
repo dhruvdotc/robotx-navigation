@@ -83,7 +83,19 @@ Intrinsics JSON lives in `calibration/camera_intrinsics_latest.json`. Pass `--ca
 
 ## Gazebo Simulation
 
-A full ArduPilot-SITL simulation of the RobotX navigation course with animated ocean, red/green gate buoys, and a nadir camera on the drone. See [simulation/README.md](simulation/README.md).
+A full ArduPilot-SITL simulation of the RobotX navigation course with animated ocean, red/green gate buoys, and a nadir camera on the drone.
+
+**Two ways to run any of the 3 courses:**
+
+```bash
+# Headless — terminal progress updates (no windows)
+bash simulation/run_course.sh --course 1   # or 2 or 3
+
+# Visual — Gazebo 3D view + SITL console + camera detector + live GPS coords
+bash simulation/run_course.sh --course 1 --visual
+```
+
+All outputs (detections, accuracy report, GPS map, logs) save to `simulation/sim_tests/run_N/` automatically after each run. See [simulation/README.md](simulation/README.md) for full details.
 
 ---
 
