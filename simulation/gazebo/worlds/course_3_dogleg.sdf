@@ -196,6 +196,60 @@
       </link>
     </model>
 
+    <!-- ============================================================================
+         DISTRACTOR OBSTACLES - Course 3
+         Spread across both legs of the L-shaped course.
+         Leg 1 (E axis): obstacles at |N| > 3 m, outside the E=10/25 gate corridor.
+         Leg 2 (N axis): obstacles at |E-35| > 3 m, outside the N=15/30 gate corridor.
+         ============================================================================ -->
+
+    <!-- Leg 1 distractors (East axis) -->
+    <model name="d3_gray_a"><static>true</static><pose>6 5 0.05 0 0 0.4</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.9 0.6 0.10</size></box></geometry>
+      <material><ambient>0.45 0.45 0.45 1</ambient><diffuse>0.55 0.55 0.55 1</diffuse></material></visual></link></model>
+
+    <model name="d3_olive_a"><static>true</static><pose>12 -6 0.05 0 0 1.3</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.80 0.50 0.10</size></box></geometry>
+      <material><ambient>0.12 0.28 0.10 1</ambient><diffuse>0.18 0.40 0.14 1</diffuse></material></visual></link></model>
+
+    <model name="d3_brown_a"><static>true</static><pose>17 8 0.20 0 0 0.8</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.5 0.5 0.40</size></box></geometry>
+      <material><ambient>0.38 0.22 0.08 1</ambient><diffuse>0.55 0.32 0.12 1</diffuse></material></visual></link></model>
+
+    <model name="d3_barrel_a"><static>true</static><pose>22 -7 0.20 0 0 0</pose>
+      <link name="l"><visual name="v"><geometry><cylinder><radius>0.20</radius><length>0.40</length></cylinder></geometry>
+      <material><ambient>0.30 0.30 0.30 1</ambient><diffuse>0.38 0.38 0.38 1</diffuse></material></visual></link></model>
+
+    <model name="d3_gray_b"><static>true</static><pose>28 5 0.05 0 0 1.0</pose>
+      <link name="l"><visual name="v"><geometry><box><size>1.0 0.65 0.10</size></box></geometry>
+      <material><ambient>0.42 0.42 0.42 1</ambient><diffuse>0.52 0.52 0.52 1</diffuse></material></visual></link></model>
+
+    <!-- Corner / turn area -->
+    <model name="d3_olive_b"><static>true</static><pose>28 -8 0.05 0 0 0.6</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.75 0.48 0.10</size></box></geometry>
+      <material><ambient>0.12 0.28 0.10 1</ambient><diffuse>0.18 0.40 0.14 1</diffuse></material></visual></link></model>
+
+    <!-- Leg 2 distractors (North axis, E=35 centreline, obstacles offset in E) -->
+    <model name="d3_gray_c"><static>true</static><pose>27 8 0.05 0 0 0.3</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.85 0.55 0.10</size></box></geometry>
+      <material><ambient>0.44 0.44 0.44 1</ambient><diffuse>0.54 0.54 0.54 1</diffuse></material></visual></link></model>
+
+    <model name="d3_olive_c"><static>true</static><pose>40 12 0.05 0 0 1.5</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.70 0.45 0.10</size></box></geometry>
+      <material><ambient>0.12 0.28 0.10 1</ambient><diffuse>0.18 0.40 0.14 1</diffuse></material></visual></link></model>
+
+    <model name="d3_barrel_b"><static>true</static><pose>27 22 0.15 0 0 0</pose>
+      <link name="l"><visual name="v"><geometry><cylinder><radius>0.18</radius><length>0.30</length></cylinder></geometry>
+      <material><ambient>0.32 0.32 0.32 1</ambient><diffuse>0.40 0.40 0.40 1</diffuse></material></visual></link></model>
+
+    <model name="d3_brown_b"><static>true</static><pose>42 24 0.18 0 0 1.1</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.55 0.55 0.35</size></box></geometry>
+      <material><ambient>0.40 0.25 0.10 1</ambient><diffuse>0.58 0.36 0.14 1</diffuse></material></visual></link></model>
+
+    <model name="d3_gray_d"><static>true</static><pose>29 35 0.05 0 0 0.7</pose>
+      <link name="l"><visual name="v"><geometry><box><size>0.95 0.60 0.10</size></box></geometry>
+      <material><ambient>0.43 0.43 0.43 1</ambient><diffuse>0.53 0.53 0.53 1</diffuse></material></visual></link></model>
+
     <!-- Drone spawned at course start, facing East -->
     <include>
       <uri>model://iris_uav</uri>

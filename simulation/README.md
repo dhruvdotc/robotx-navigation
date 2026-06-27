@@ -180,6 +180,21 @@ python3 simulation/plot_run.py simulation/sim_tests/run_5
 
 ---
 
+## Distractor Obstacles
+
+All three courses contain floating debris objects designed to generate false-positive candidates for the HSV detector. Each course has ~11 distractors in three categories:
+
+| Type | Shape | Color | HSV challenge |
+|------|-------|-------|---------------|
+| Olive-green panels | Flat box ~0.8x0.5x0.1 m | Dull olive green | Hue ~60-70, just below the detector's green range (75-99). Borderline false positive. |
+| Orange-brown crates | Box ~0.5x0.5x0.4 m | Warm tan/brown | Hue ~15-25, warm tones that can bleed into the red range at low saturation. |
+| Gray barrels | Cylinder r=0.15-0.2 m | Mid-gray | Neutral distractor, tests shape-based filtering. |
+| Gray flat panels | Flat box ~0.9x0.6x0.1 m | Medium gray | Neutral distractor, tests size gating. |
+
+Key difference from real buoys: **no emissive material**. Real buoys have a bright emissive component; obstacles rely only on ambient/diffuse lighting, so they look duller from nadir. The detector should suppress them via confidence thresholding and size gating, but the olive panels in particular will stress-test the green HSV range boundary.
+
+Obstacles are placed outside the gate corridors (|lateral offset| > 3 m from each course centreline) so they do not occlude the actual gates.
+
 ## Technical Notes
 
 - ogre2 ignores the camera `<distortion>` block ("ImageBrownDistortionModel is not supported in ogre2") so the render is a clean pinhole. Run with `--no-undistort` - all launchers already do this.
