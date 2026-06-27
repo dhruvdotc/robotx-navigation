@@ -33,16 +33,54 @@ def log(msg: str) -> None:
     print(f"[FLY {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+# Preset waypoints for each course. Each entry is (north_m, east_m, label).
+COURSE_WAYPOINTS = {
+    1: [
+        # Course 1: straight East navigation channel (3 gates + light buoy)
+        (0.0,  10.0, "gate 1"),
+        (0.0,  25.0, "gate 2"),
+        (0.0,  40.0, "gate 3"),
+        (0.0,  50.0, "light buoy"),
+    ],
+    2: [
+        # Course 2: lawnmower sweep over 60x30 m open-water survey field.
+        # Three E-W strips at N=-15, 0, +15 ensure every scattered buoy is
+        # overflown within ~8 m of nadir at 10 m AGL (60-deg FOV).
+        (- 15.0,  0.0,  "strip 1 start"),
+        (- 15.0, 60.0,  "strip 1 end"),
+        (   0.0, 60.0,  "strip 2 start"),
+        (   0.0,  0.0,  "strip 2 end"),
+        (+ 15.0,  0.0,  "strip 3 start"),
+        (+ 15.0, 60.0,  "strip 3 end"),
+    ],
+    3: [
+        # Course 3: L-shaped dogleg -- East then North.
+        # Leg 1: fly East along N=0 centreline past gates 1 and 2.
+        (0.0,  10.0, "gate 1"),
+        (0.0,  25.0, "gate 2"),
+        (0.0,  35.0, "corner turn"),
+        # Leg 2: fly North along E=35 centreline past gates 3 and 4.
+        (15.0, 35.0, "gate 3"),
+        (30.0, 35.0, "gate 4"),
+        (42.0, 35.0, "light buoy"),
+    ],
+}
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--connect", default="udp:127.0.0.1:14550",
                    help="MAVLink endpoint (MAVProxy GCS out by default).")
+    p.add_argument("--course", type=int, default=1, choices=[1, 2, 3],
+                   help="Course preset: 1=nav channel, 2=search field lawnmower, "
+                        "3=L-shaped dogleg. Overrides --gates if set.")
     p.add_argument("--altitude-m", type=float, default=10.0)
-    p.add_argument("--speed", type=float, default=1.5, help="Dolly speed East (m/s).")
-    p.add_argument("--gates", default="10,25,40,50",
-                   help="Comma-separated East positions (m) to pause over.")
+    p.add_argument("--speed", type=float, default=1.5, help="Transit speed (m/s).")
+    p.add_argument("--gates", default=None,
+                   help="Override waypoints: comma-separated 'north:east' pairs, "
+                        "e.g. '0:10,0:25'. Overrides --course.")
     p.add_argument("--hover-s", type=float, default=4.0,
-                   help="Level hover seconds at each gate (for clean nadir frames).")
+                   help="Level hover seconds at each waypoint (for clean nadir frames).")
     p.add_argument("--countdown", type=int, default=10,
                    help="Seconds of countdown before the flight begins (0 to skip).")
     p.add_argument("--rtl", action="store_true", help="RTL at the end instead of LAND.")
@@ -133,9 +171,44 @@ def goto(m, north, east, alt, settle=0.0):
         time.sleep(0.1)
 
 
+def fly_waypoints(m, waypoints, altitude, speed, hover_s):
+    """Fly through a list of (north, east, label) waypoints at constant altitude."""
+    north, east = 0.0, 0.0
+    step = speed * 0.2
+    for (tgt_n, tgt_e, label) in waypoints:
+        dist = math.hypot(tgt_n - north, tgt_e - east)
+        log(f"-> {label} (N={tgt_n:.1f}, E={tgt_e:.1f}), dist={dist:.1f} m")
+        # interpolate in small steps for smooth flight
+        while math.hypot(tgt_n - north, tgt_e - east) > step:
+            dn = tgt_n - north
+            de = tgt_e - east
+            mag = math.hypot(dn, de)
+            north += step * dn / mag
+            east  += step * de / mag
+            goto(m, north, east, altitude, settle=0.2)
+        # snap to target and hover
+        north, east = tgt_n, tgt_e
+        goto(m, north, east, altitude, settle=hover_s)
+        log(f"   reached {label} -- held {hover_s:.1f}s.")
+
+
 def main() -> int:
     args = parse_args()
-    gates = [float(x) for x in args.gates.split(",") if x.strip()]
+
+    # Resolve waypoints: manual override > course preset
+    if args.gates is not None:
+        waypoints = []
+        for pair in args.gates.split(","):
+            pair = pair.strip()
+            if ":" in pair:
+                n, e = pair.split(":", 1)
+                waypoints.append((float(n), float(e), f"N{n} E{e}"))
+            else:
+                waypoints.append((0.0, float(pair), f"E={pair}"))
+    else:
+        waypoints = COURSE_WAYPOINTS[args.course]
+
+    log(f"Course {args.course}: {len(waypoints)} waypoints.")
 
     log(f"connecting to {args.connect} ...")
     m = mavutil.mavlink_connection(args.connect)
@@ -165,16 +238,7 @@ def main() -> int:
         log("takeoff failed; aborting.")
         return 1
 
-    log(f"dolly EAST along centreline at {args.speed} m/s, pausing {args.hover_s}s/gate.")
-    east = 0.0
-    for gate in gates:
-        # advance East in small steps for a smooth cinematic move
-        step = args.speed * 0.2
-        while east < gate - 1e-3:
-            east = min(gate, east + step)
-            goto(m, 0.0, east, args.altitude_m, settle=0.2)
-        log(f"over gate at East={gate:.1f} m -- holding level {args.hover_s}s.")
-        goto(m, 0.0, gate, args.altitude_m, settle=args.hover_s)
+    fly_waypoints(m, waypoints, args.altitude_m, args.speed, args.hover_s)
 
     log("course complete.")
     if args.rtl:

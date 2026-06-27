@@ -1,0 +1,183 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="course_2_search_field">
+    <!--
+    COURSE 2: Open Water Aerial Survey
+    ===================================
+    Task inspiration: RobotX 2026 "Scan the Code" + pre-race aerial recon.
+    Before the surface vehicle enters the field, the UAV surveys a 60x30 m open
+    water area and GPS-tags every buoy for the surface team.
+
+    Buoys are NOT laid out as a straight channel. They are scattered realistically
+    across the field in two loose clusters (as they might drift or be set in open
+    water). No repeating gate structure -- the drone must sweep the whole area.
+
+      Green (starboard tendency when approaching from W):
+        green1  E= 8, N=+10
+        green2  E=24, N= -8
+        green3  E=42, N= +7
+
+      Red (port tendency):
+        red1    E=14, N=-11
+        red2    E=31, N= +6
+        red3    E=48, N= -5
+
+      Light buoy (scan-the-code target):
+        light   E=55, N= +2
+
+    Flight plan (fly_course.py --course 2): lawnmower at 10 m AGL.
+      Strip 1: fly East  at N=-15  from E=0  to E=60
+      Strip 2: fly West  at N=  0  from E=60 to E=0
+      Strip 3: fly East  at N=+15  from E=0  to E=60
+    Guarantees every buoy is overflown at least once within ~8 m of nadir.
+
+    All buoy dimensions, materials, and spec comments copied from
+    robotx_uav_course.sdf (gate width 2.5 m ref, Sur-Mark cylinder spec).
+    -->
+
+    <physics name="1ms" type="ignore">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system"       name="gz::sim::systems::Physics"></plugin>
+    <plugin filename="gz-sim-sensors-system"       name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"></plugin>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"></plugin>
+    <plugin filename="gz-sim-imu-system"           name="gz::sim::systems::Imu"></plugin>
+    <plugin filename="gz-sim-navsat-system"        name="gz::sim::systems::NavSat"></plugin>
+
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <latitude_deg>-35.363262</latitude_deg>
+      <longitude_deg>149.165237</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+
+    <scene>
+      <ambient>0.4 0.4 0.4 1.0</ambient>
+      <background>0.6 0.7 0.85 1.0</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 120 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.4 0.4 0.4 1</specular>
+      <attenuation><range>1000</range><constant>0.9</constant><linear>0.01</linear><quadratic>0.001</quadratic></attenuation>
+      <direction>0.5 -0.5 -1.0</direction>
+    </light>
+
+    <model name="axes">
+      <static>1</static>
+      <link name="link">
+        <sensor name="navsat_sensor" type="navsat">
+          <always_on>1</always_on>
+          <update_rate>1</update_rate>
+        </sensor>
+      </link>
+    </model>
+
+    <model name="ocean_surface">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="water_link">
+        <collision name="water_collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>500 500</size></plane>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+
+    <include>
+      <uri>coast_waves</uri>
+      <name>ocean_waves</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <plugin filename="libPublisherPlugin.so" name="vrx::PublisherPlugin">
+      <message type="gz.msgs.Param" topic="/vrx/wavefield/parameters" every="2.0">
+        params { key: "direction"  value { type: DOUBLE double_value: 0.0 } }
+        params { key: "gain"       value { type: DOUBLE double_value: 0.5 } }
+        params { key: "period"     value { type: DOUBLE double_value: 5   } }
+        params { key: "steepness" value { type: DOUBLE double_value: 0   } }
+      </message>
+    </plugin>
+
+    <!-- ============================================================
+         BUOYS: scattered open-water survey field (60 x 30 m)
+         Gazebo: +X = East, +Y = North
+         ============================================================ -->
+
+    <!-- Green buoys -->
+    <model name="green1"><static>true</static><pose>8 10 0.5 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><cylinder><radius>0.23</radius><length>0.99</length></cylinder></geometry>
+        <material><ambient>0.0 0.4 0.20 1</ambient><diffuse>0.0 0.6 0.31 1</diffuse><emissive>0.0 1.0 0.51 1</emissive></material>
+      </visual></link></model>
+
+    <model name="green2"><static>true</static><pose>24 -8 0.5 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><cylinder><radius>0.23</radius><length>0.99</length></cylinder></geometry>
+        <material><ambient>0.0 0.4 0.20 1</ambient><diffuse>0.0 0.6 0.31 1</diffuse><emissive>0.0 1.0 0.51 1</emissive></material>
+      </visual></link></model>
+
+    <model name="green3"><static>true</static><pose>42 7 0.5 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><cylinder><radius>0.23</radius><length>0.99</length></cylinder></geometry>
+        <material><ambient>0.0 0.4 0.20 1</ambient><diffuse>0.0 0.6 0.31 1</diffuse><emissive>0.0 1.0 0.51 1</emissive></material>
+      </visual></link></model>
+
+    <!-- Red buoys -->
+    <model name="red1"><static>true</static><pose>14 -11 0.5 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><cylinder><radius>0.23</radius><length>0.99</length></cylinder></geometry>
+        <material><ambient>0.5 0.0 0.0 1</ambient><diffuse>0.8 0.0 0.0 1</diffuse><emissive>1.0 0.0 0.0 1</emissive></material>
+      </visual></link></model>
+
+    <model name="red2"><static>true</static><pose>31 6 0.5 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><cylinder><radius>0.23</radius><length>0.99</length></cylinder></geometry>
+        <material><ambient>0.5 0.0 0.0 1</ambient><diffuse>0.8 0.0 0.0 1</diffuse><emissive>1.0 0.0 0.0 1</emissive></material>
+      </visual></link></model>
+
+    <model name="red3"><static>true</static><pose>48 -5 0.5 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><cylinder><radius>0.23</radius><length>0.99</length></cylinder></geometry>
+        <material><ambient>0.5 0.0 0.0 1</ambient><diffuse>0.8 0.0 0.0 1</diffuse><emissive>1.0 0.0 0.0 1</emissive></material>
+      </visual></link></model>
+
+    <!-- Scan-the-code light buoy at far end of survey field -->
+    <model name="light_buoy"><static>true</static><pose>55 2 0.5 0 0 0</pose>
+      <link name="link">
+        <visual name="body">
+          <geometry><box><size>0.5 0.5 0.5</size></box></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+        </visual>
+        <visual name="led_face">
+          <pose>0.251 0 0 0 0 0</pose>
+          <geometry><box><size>0.01 0.35 0.35</size></box></geometry>
+          <material><ambient>0.4 0.0 0.0 1</ambient><diffuse>0.8 0.0 0.0 1</diffuse><emissive>1.0 0.1 0.1 1</emissive></material>
+        </visual>
+        <light name="pulse_led" type="point">
+          <pose>0.3 0 0 0 0 0</pose>
+          <diffuse>1.0 0.0 0.0 1</diffuse><specular>0.2 0.0 0.0 1</specular>
+          <attenuation><range>30</range><constant>0.3</constant><linear>0.02</linear><quadratic>0.002</quadratic></attenuation>
+        </light>
+      </link>
+    </model>
+
+    <!-- Drone spawned at W edge of survey field, facing East -->
+    <include>
+      <uri>model://iris_uav</uri>
+      <name>uav</name>
+      <pose>-2 0 0.195 0 0 0</pose>
+    </include>
+
+  </world>
+</sdf>

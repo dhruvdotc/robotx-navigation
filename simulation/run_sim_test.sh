@@ -6,13 +6,16 @@
 #   accuracy_report.md    - cross-referenced vs ground-truth buoy positions
 #   summary.json          - machine-readable metrics (duration, errors, buoys found)
 #   gz.log                - Gazebo stdout/stderr
-#   recording.mp4         - screen recording (requires ffmpeg + DISPLAY, optional)
+#   map.png               - top-down detection diagram vs ground truth
+#   recording.mp4         - screen recording (--gui + ffmpeg, optional)
 #
 # A minimum 15-second sustained flight is enforced. Runs that don't meet it are
 # flagged in the report but the folder is still saved so nothing is silently lost.
 #
 # Usage:
-#   bash simulation/run_sim_test.sh              # headless Gazebo + auto fly
+#   bash simulation/run_sim_test.sh --course 1   # Course 1: straight nav channel (default)
+#   bash simulation/run_sim_test.sh --course 2   # Course 2: open-water survey lawnmower
+#   bash simulation/run_sim_test.sh --course 3   # Course 3: L-shaped dogleg
 #   bash simulation/run_sim_test.sh --gui        # show Gazebo window (for recording)
 #   bash simulation/run_sim_test.sh --no-fly     # launch sim but don't auto-fly
 #   bash simulation/run_sim_test.sh --no-record  # skip screen recording even if ffmpeg available
@@ -21,7 +24,6 @@
 set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORLD="${REPO_ROOT}/simulation/gazebo/worlds/robotx_uav_course.sdf"
 ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.bash}"
 ALTITUDE_M="${ALTITUDE_M:-10}"
 SIM_TESTS_DIR="${REPO_ROOT}/simulation/sim_tests"
@@ -33,9 +35,12 @@ SIM_VEHICLE="${ARDUPILOT}/Tools/autotest/sim_vehicle.py"
 HEADLESS=1
 AUTO_FLY=1
 RECORD=1
+COURSE=1
 
 for arg in "$@"; do
   case "$arg" in
+    --course)   shift; COURSE="$1" ;;
+    --course=*) COURSE="${arg#--course=}" ;;
     --gui)       HEADLESS=0 ;;
     --no-fly)    AUTO_FLY=0 ;;
     --no-record) RECORD=0 ;;
@@ -43,6 +48,17 @@ for arg in "$@"; do
     *) echo "Unknown arg: $arg (try --help)" >&2; exit 2 ;;
   esac
 done
+
+# Select world file based on course number
+case "$COURSE" in
+  1) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/robotx_uav_course.sdf"
+     COURSE_NAME="Course 1: Straight Navigation Channel" ;;
+  2) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/course_2_search_field.sdf"
+     COURSE_NAME="Course 2: Open Water Survey (Lawnmower)" ;;
+  3) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/course_3_dogleg.sdf"
+     COURSE_NAME="Course 3: L-Shaped Dogleg" ;;
+  *) echo "ERROR: --course must be 1, 2, or 3" >&2; exit 2 ;;
+esac
 
 # --------------------------------------------------------------------------- #
 # Determine run number
@@ -57,7 +73,8 @@ done
 RUN_DIR="${SIM_TESTS_DIR}/run_${RUN_N}"
 mkdir -p "$RUN_DIR"
 
-echo "=== RobotX sim test: run_${RUN_N} ==="
+echo "=== RobotX sim test: run_${RUN_N} | ${COURSE_NAME} ==="
+echo "World:      $WORLD"
 echo "Output dir: $RUN_DIR"
 
 # --------------------------------------------------------------------------- #
@@ -88,12 +105,14 @@ cleanup() {
   # Stamp the run number into the summary.json if it was written
   local sjson="${RUN_DIR}/summary.json"
   if [ -f "$sjson" ]; then
-    python3 - "$sjson" "$RUN_N" "$RUN_DIR" <<'PY'
+    python3 - "$sjson" "$RUN_N" "$RUN_DIR" "$COURSE" "$COURSE_NAME" <<'PY'
 import json, sys, os
-path, run_n, run_dir = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+path, run_n, run_dir, course_n, course_name = sys.argv[1], int(sys.argv[2]), sys.argv[3], int(sys.argv[4]), sys.argv[5]
 with open(path) as f:
     d = json.load(f)
 d["run"] = run_n
+d["course"] = course_n
+d["course_name"] = course_name
 # record files that exist in the run dir
 for fname in os.listdir(run_dir):
     if fname.endswith(".mp4"):
@@ -220,7 +239,7 @@ echo "      Outputs -> $RUN_DIR"
 # Launch fly_course if requested (after a brief delay for accuracy_verify to connect)
 if [ "$AUTO_FLY" -eq 1 ]; then
   (sleep 5; python3 "${REPO_ROOT}/simulation/fly_course.py" \
-    --connect udp:127.0.0.1:14550 --countdown 5) &
+    --connect udp:127.0.0.1:14550 --countdown 5 --course "${COURSE}") &
   FLY_PID=$!
   echo "      fly_course.py scheduled (5s delay, then 5s countdown)."
 fi

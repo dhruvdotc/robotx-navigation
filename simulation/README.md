@@ -1,18 +1,172 @@
-# Gazebo Harmonic RobotX UAV Course
+# Gazebo Harmonic RobotX UAV Simulation
 
-A Gazebo Harmonic scene where an ArduPilot-SITL drone flies a nadir camera over a RobotX-spec navigation channel (3 red/green gates) on an animated ocean. The real `camera_live_feed.py` detector runs against the live camera topic and projects each buoy detection to GPS.
+An ArduPilot-SITL drone flies a nadir camera over RobotX-spec buoy courses on an animated VRX ocean. The real `camera_live_feed.py` detector runs live against the camera topic and projects every buoy detection to GPS. Three distinct courses test different detection scenarios.
 
 ---
 
-## World: `gazebo/worlds/robotx_uav_course.sdf`
+## The Three Courses
 
-**Animated ocean.** The water uses VRX's `coast_waves` Gerstner-wave ocean driven by `libWaveVisual.so`. A `vrx::PublisherPlugin` publishes wavefield parameters on `/vrx/wavefield/parameters`. It is visual only - no physics or collision. A separate invisible `ocean_surface` collision plane at z=0 lets the drone rest and arm before takeoff.
+### Course 1 - Straight Navigation Channel
+**File:** `gazebo/worlds/robotx_uav_course.sdf`
+**Task inspiration:** RobotX 2026 "Safe Passage" (Task 1)
 
-**3 navigation gates.** Red/green Sur-Mark cylinders along +X at Y=0, at East = 10, 25, 40 m. Gate width is 2.5 m (within RobotX spec of 1.8-3.0 m). A scan-the-code `light_buoy` sits at East=50. Green uses a spring-green emissive (~OpenCV hue 81) so the HSV detector's green range (75-99) catches it cleanly without colliding with blue.
+Three red/green gate pairs along a straight East axis, plus a scan-the-code light buoy at the end. The drone dollies East at N=0 centreline, pausing over each gate for clean nadir frames. Baseline test for the detector.
 
-**`iris_uav` model.** Stock iris airframe with the ArduPilotPlugin (FDM UDP 9002, lockstep) and a fixed nadir `gimbal_nadir` camera pod at 1920x1080, with calibration-matched intrinsics, publishing on `/drone/camera`.
+| Buoy | East (m) | North (m) | Color |
+|------|----------|-----------|-------|
+| gate1_green | 10 | +1.25 | green |
+| gate1_red   | 10 | -1.25 | red   |
+| gate2_green | 25 | +1.25 | green |
+| gate2_red   | 25 | -1.25 | red   |
+| gate3_green | 40 | +1.25 | green |
+| gate3_red   | 40 | -1.25 | red   |
+| light_buoy  | 50 |  0    | -     |
 
-**GPS datum.** Set to ArduPilot SITL's CMAC home so the SITL home and world origin match.
+**Flight path:** Straight East at N=0, hover 4s per gate.
+
+```bash
+bash simulation/run_sim_test.sh --course 1
+```
+
+---
+
+### Course 2 - Open Water Survey (Lawnmower)
+**File:** `gazebo/worlds/course_2_search_field.sdf`
+**Task inspiration:** RobotX "Scan the Code" + pre-race aerial recon
+
+Seven buoys scattered across a 60x30 m open-water field with no channel structure. The drone runs a three-strip lawnmower pattern to survey the whole field. Tests the detector's ability to find and GPS-tag buoys without a predictable layout.
+
+| Buoy | East (m) | North (m) | Color |
+|------|----------|-----------|-------|
+| green1 |  8 | +10 | green |
+| red1   | 14 | -11 | red   |
+| green2 | 24 |  -8 | green |
+| red2   | 31 |  +6 | red   |
+| green3 | 42 |  +7 | green |
+| red3   | 48 |  -5 | red   |
+| light_buoy | 55 | +2 | -  |
+
+**Flight path:** Three East-West strips at N=-15, N=0, N=+15 (lawnmower). Every buoy falls within 8 m of nadir at 10 m AGL.
+
+```bash
+bash simulation/run_sim_test.sh --course 2
+```
+
+---
+
+### Course 3 - L-Shaped Dogleg
+**File:** `gazebo/worlds/course_3_dogleg.sdf`
+**Task inspiration:** RobotX 2026 "Gymkhana" / multi-leg obstacle course
+
+Two-leg L-shaped course: two gates going East, then a 90-degree right turn and two more gates going North. Maritime port/starboard convention is maintained on both legs. Tests the detector across two different approach headings.
+
+| Buoy | East (m) | North (m) | Color | Leg |
+|------|----------|-----------|-------|-----|
+| gate1_green | 10   | +1.25 | green | 1 (East) |
+| gate1_red   | 10   | -1.25 | red   | 1 (East) |
+| gate2_green | 25   | +1.25 | green | 1 (East) |
+| gate2_red   | 25   | -1.25 | red   | 1 (East) |
+| gate3_green | 36.25 | 15   | green | 2 (North) |
+| gate3_red   | 33.75 | 15   | red   | 2 (North) |
+| gate4_green | 36.25 | 30   | green | 2 (North) |
+| gate4_red   | 33.75 | 30   | red   | 2 (North) |
+| light_buoy  | 35    | 42   | -     | end      |
+
+**Flight path:** East to corner at (E=35, N=0), then pivot North to (E=35, N=42).
+
+```bash
+bash simulation/run_sim_test.sh --course 3
+```
+
+---
+
+## Sim Tests - Automated Output Collection
+
+`run_sim_test.sh` launches everything in one command and saves all outputs to `simulation/sim_tests/run_N/` (auto-incrementing run number):
+
+```bash
+bash simulation/run_sim_test.sh --course 1          # headless + auto fly
+bash simulation/run_sim_test.sh --course 2 --gui    # Gazebo window + screen recording
+bash simulation/run_sim_test.sh --course 3 --no-fly # launch only, fly manually
+```
+
+**Flags:**
+
+| Flag | Effect |
+|------|--------|
+| `--course 1/2/3` | Select course world and flight path (default: 1) |
+| `--gui` | Show Gazebo window instead of headless server |
+| `--no-fly` | Start sim but don't auto-launch fly_course.py |
+| `--no-record` | Skip ffmpeg screen recording even if available |
+
+**Each `run_N/` folder contains:**
+
+| File | Contents |
+|------|----------|
+| `detections.csv` | Per-frame buoy detections with GPS estimates |
+| `accuracy_report.md` | Cross-referenced vs ground-truth buoy positions |
+| `summary.json` | Machine-readable metrics: duration, mean error, buoys found, pass/fail, course |
+| `gz.log` | Gazebo and SITL stdout/stderr |
+| `verify.log` | accuracy_verify.py console output |
+| `map.png` | Top-down detection map: detected vs GT positions, error lines, runtime |
+| `recording.mp4` | Screen recording (--gui mode + ffmpeg available) |
+
+A minimum 15-second sustained flight is enforced. Short runs are flagged in the report but the folder is still saved.
+
+---
+
+## Run Manually (advanced)
+
+**Basic Gazebo + SITL launch:**
+
+```bash
+bash simulation/run_robotx_uav_sitl.sh            # Course 1, Gazebo GUI + SITL
+bash simulation/run_robotx_uav_sitl.sh --headless # headless server + SITL
+bash simulation/run_robotx_uav_sitl.sh --no-sitl  # Gazebo only
+```
+
+SITL MAVLink is at `tcp:127.0.0.1:5760` (FDM UDP 9002). `eeprom.bin` in the repo root persists `FRAME_CLASS=1` so arming works without wiping parameters each launch.
+
+**Full 3-window demo:**
+
+```bash
+bash simulation/run_demo_windows.sh
+```
+
+Opens three windows: Gazebo GUI, MAVProxy console xterm, and camera_live_feed.py xterm. When it prints READY:
+
+```bash
+python3 simulation/fly_course.py --course 1    # or 2 or 3
+```
+
+**Fly a specific course manually:**
+
+```bash
+# Course 1: straight channel
+python3 simulation/fly_course.py --course 1 --connect udp:127.0.0.1:14550
+
+# Course 2: lawnmower survey
+python3 simulation/fly_course.py --course 2 --connect udp:127.0.0.1:14550 --speed 2.0
+
+# Course 3: L-shaped dogleg
+python3 simulation/fly_course.py --course 3 --connect udp:127.0.0.1:14550
+```
+
+**Verify detection accuracy during a flight:**
+
+```bash
+python3 simulation/accuracy_verify.py --connect udp:127.0.0.1:14551
+```
+
+Subscribes to `/drone/camera`, runs the detection pipeline live, and writes a cross-referenced accuracy report on exit.
+
+**Generate or regenerate the detection map:**
+
+```bash
+python3 simulation/plot_run.py                   # latest run
+python3 simulation/plot_run.py --run 3           # specific run number
+python3 simulation/plot_run.py simulation/sim_tests/run_5
+```
 
 ---
 
@@ -22,90 +176,19 @@ A Gazebo Harmonic scene where an ArduPilot-SITL drone flies a nadir camera over 
 - ArduPilot SITL built at `~/ardupilot`, plus `ardupilot_gazebo` plugin at `~/ardupilot_gazebo`
 - VRX built in `~/vrx_ws` (supplies `coast_waves` and the wave plugins). Override with `VRX_GZ=<path>` if installed elsewhere.
 
-`gz_env.sh` is the single source of truth for `GZ_SIM_*` resource and plugin paths (repo models first, then ardupilot_gazebo, then VRX). It is sourced by both launchers - do not set these paths manually.
+`gz_env.sh` is the single source of truth for `GZ_SIM_*` resource and plugin paths. It is sourced by all launchers - do not set these paths manually.
 
 ---
 
-## Sim tests (one command, outputs collected automatically)
+## Technical Notes
 
-```bash
-bash simulation/run_sim_test.sh           # headless + auto fly + collect outputs
-bash simulation/run_sim_test.sh --gui     # show Gazebo window + optional screen recording
-bash simulation/run_sim_test.sh --no-fly  # start sim but don't auto-fly (fly manually)
-```
-
-Each run creates `simulation/sim_tests/run_N/` with:
-
-| File | Contents |
-|------|----------|
-| `detections.csv` | Per-frame buoy detections with GPS estimates |
-| `accuracy_report.md` | Cross-referenced vs ground-truth buoy positions |
-| `summary.json` | Machine-readable metrics (duration, mean error, buoys found, pass/fail) |
-| `gz.log` | Gazebo and SITL stdout/stderr |
-| `verify.log` | accuracy_verify.py console output |
-| `recording.mp4` | Screen recording (--gui mode + ffmpeg available) |
-| `map.png` | Top-down detection map (detected vs ground-truth positions, error lines, runtime) |
-
-The run number increments automatically. A minimum 15-second sustained flight is enforced - short runs are flagged in the report but the folder is still saved.
-
----
-
-## Run (manual / advanced)
-
-**Basic launch (one terminal):**
-
-```bash
-bash simulation/run_robotx_uav_sitl.sh            # Gazebo GUI + SITL
-bash simulation/run_robotx_uav_sitl.sh --headless # headless server + SITL
-bash simulation/run_robotx_uav_sitl.sh --no-sitl  # Gazebo only, no SITL
-```
-
-SITL MAVLink is at `tcp:127.0.0.1:5760` (FDM UDP 9002). `eeprom.bin` in the repo root persists `FRAME_CLASS=1` so arming works without wiping parameters each launch.
-
-**Full demo - three windows on the WSLg display:**
-
-```bash
-bash simulation/run_demo_windows.sh
-```
-
-Opens three windows: the Gazebo GUI with the animated ocean, an xterm running the `sim_vehicle.py` / MAVProxy console, and an xterm running `camera_live_feed.py --ros-topic /drone/camera` showing live detection output. A background gz-to-ROS image bridge starts automatically. MAVProxy outputs are exposed at `udp:14550` (fly_course), `udp:14551` (accuracy_verify), `udp:14552` (readiness probe).
-
-When it prints **READY**, start recording and then fly:
-
-```bash
-python3 simulation/fly_course.py
-```
-
-This runs a 10 second countdown then a scripted GUIDED flight over the 3-gate course.
-
----
-
-## Verify detection and GPS accuracy
-
-Run alongside a flight to log detections live and write a report on exit:
-
-```bash
-python3 simulation/accuracy_verify.py --connect udp:127.0.0.1:14551
-```
-
-It subscribes to `/drone/camera`, runs the same pipeline as `camera_live_feed.py`, and reads live pose and attitude over MAVLink. For every level frame it projects detections to local-NED and GPS using the drone's live altitude, logging to `simulation/accuracy_logs/detections_<ts>.csv` in real time.
-
-On flight end (Ctrl-C, `--duration` timeout, or disarm-after-arm) it cross-references the log against the world's ground-truth buoy positions and writes `simulation/accuracy_report_<ts>.md` plus refreshes `simulation/accuracy_report.md` with per-buoy error (m), mean/max error, detection count, and mean confidence.
-
-A 15 second minimum sustained-flight duration is enforced - shorter runs are flagged in the report.
-
-Typical result over the 3-gate course at 10 m: 6/6 colour buoys detected, mean error ~0.15 m. The `light_buoy` is an expected miss (black box, no colour signature from nadir).
-
----
-
-## Notes
-
-- ogre2 ignores the camera `<distortion>` block ("ImageBrownDistortionModel is not supported in ogre2") so the render is a clean pinhole. Run the detector with `--no-undistort` - both the demo launcher and accuracy_verify already do this.
-- Do not reboot the flight controller in place - it breaks gz lockstep. Restart both the Gazebo and SITL processes together.
-- Seeing "ArduPilot controller has reset" a couple of times at startup is normal. A continuous reset loop is not.
+- ogre2 ignores the camera `<distortion>` block ("ImageBrownDistortionModel is not supported in ogre2") so the render is a clean pinhole. Run with `--no-undistort` - all launchers already do this.
+- Do not reboot the flight controller in place during a run - it breaks gz lockstep. Restart both processes together.
+- "ArduPilot controller has reset" a couple of times at startup is normal. A continuous loop is not.
+- Green buoys use a spring-green emissive (OpenCV hue ~81) to stay within the HSV detector's green range (75-99) without bleeding into blue (90-114).
 
 ---
 
 ## Legacy
 
-The earlier flat-ocean scene (`ucsd_robotx_demo`, `run_end_to_end.sh`, `verify_sim_topics.sh`, `ros2_bridge/bridge.yaml`) is superseded by this UAV course but kept in the repo for reference.
+The earlier flat-ocean scene (`ucsd_robotx_demo`, `run_end_to_end.sh`, `verify_sim_topics.sh`) is superseded by the three courses above but kept in the repo for reference.
