@@ -244,3 +244,21 @@ detection_logs/
 # trackable, but ignore the timestamped per-flight reports + raw detection CSVs).
 simulation/accuracy_logs/
 simulation/accuracy_report_*.md
+# Jetson / GCS artifacts
+.DS_Store
+.cursor/
+.cursorignore
+.cursorindexingignore
+fulldemo/detections.jsonl
+*.avi
+*.mov
+*.part-*
+archives/*
+yolo_comparison_test/**/runs/
+yolo_comparison_test/**/captures/
+yolo_comparison_test/path2_switch_proposal/demo_preserved/weights/buoy_roi_best.pt
+jetson_flight_logs/**/*
+!jetson_flight_logs/repo_detection_logs/successful_flight_6_2/
+!jetson_flight_logs/repo_detection_logs/successful_flight_6_2/**
+jetson_flight_logs/repo_detection_logs/successful_flight_6_2/recording_demo_flight_mac.mp4
+jetson_flight_logs/repo_detection_logs/successful_flight_6_2/recording_demo_flight_mac_screen.mov

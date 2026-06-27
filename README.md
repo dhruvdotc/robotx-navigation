@@ -1,21 +1,48 @@
 # robotx-navigation
 
-CSE145/237D Spring 2026 project. HSV-based buoy and balloon detection for RobotX UAV flights, with GPS projection from a nadir camera and a full Gazebo SITL simulation stack.
+CSE145/237D Spring 2026 - RobotX UAV buoy detection. HSV color pipeline on a Jetson, GPS projection from a nadir camera, MAVLink telemetry to a Mac ground station, and a full Gazebo SITL simulation stack.
 
 Detection classes: `red`, `green` (teal/cyan physical balloon), `blue`.
 
 ---
 
-## Real Flight
+## Real Flight - Quick Start
 
-### Prerequisites
+**Mac (Terminal 1):**
+```bash
+bash fulldemo/run_gcs_mac.sh
+```
 
-- Ubuntu 22.04 (or WSL Ubuntu-22.04 on Windows)
-- Python 3.10 with dependencies installed (see Environment Setup below)
-- Drone with a downward-facing camera accessible via OpenCV (`/dev/video*` or USB index)
-- ArduPilot flight controller with MAVLink telemetry reachable at a UDP/serial port (for GPS projection)
+**Jetson (Terminal 2):**
+```bash
+ssh babydragon@<JETSON_IP>
+cd ~/robotx-navigation
+GCS_IP=<MAC_IP> bash fulldemo/run_detection_jetson.sh
+```
 
-### Run the detector in flight
+See `fulldemo/README.md` and `fulldemo/PARTNER_INSTRUCTIONS.md` for WiFi router setup, tuning, and troubleshooting.
+
+---
+
+## Repo Layout
+
+| Path | Purpose |
+|------|---------|
+| `camera_live_feed.py` | Main detector - HSV contour detection, Kalman tracking, GPS projection, MAVLink, ROS topic input |
+| `camera_capture_spacebar.py` | Capture training images by spacebar |
+| `fulldemo/` | One-command Mac/Jetson demo scripts |
+| `mavlink_comms/` | UDP buoy protocol and ground station |
+| `scripts/` | Jetson WiFi helpers |
+| `simulation/` | Gazebo Harmonic SITL simulation stack |
+| `calibration/` | Camera intrinsics JSON |
+| `jetson_setup.sh` | Jetson dependency bootstrap |
+| `yolo11n.pt` | YOLO nano model weights |
+
+---
+
+## Real Flight - Manual Operation
+
+Run the detector directly on the Jetson with a connected camera:
 
 ```bash
 python camera_live_feed.py --camera-index 0 --altitude-m 10
@@ -31,7 +58,8 @@ Key flags:
 | `--target-diameter-m` | 0.32 | Expected buoy diameter for size gating |
 | `--det-width` / `--det-height` | 1920x1080 | Detection resolution |
 | `--no-display` | off | Headless mode (no OpenCV window) |
-| `--ros-topic` | - | Read frames from a live ROS 2 `sensor_msgs/Image` topic instead of a camera |
+| `--ros-topic` | - | Read frames from a ROS 2 sensor_msgs/Image topic instead of a camera |
+| `--no-undistort` | off | Skip undistortion (use if no significant lens distortion) |
 
 Hotkeys during live feed:
 - `q` - quit
@@ -49,21 +77,7 @@ Press `Spacebar` to save a frame, `q` to quit.
 
 ### Camera calibration
 
-Intrinsics JSON lives in `calibration/camera_intrinsics_latest.json`. Pass `--calibration calibration/camera_intrinsics_latest.json` to `camera_live_feed.py` to enable undistortion. If your camera has no significant distortion, use `--no-undistort`.
-
----
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `camera_live_feed.py` | Main detector - HSV contour detection, Kalman tracking, GPS projection, detection logging |
-| `camera_capture_spacebar.py` | Capture training images by spacebar |
-| `hsv_batch_detect.py` | Run HSV detection on a folder of saved images |
-| `color_utils.py` | Shared HSV range utilities (imported by other scripts) |
-| `augment_test.py` | Robustness demo - runs detector on one image plus 3 UAV-noise augmentations |
-| `metrics_summary.py` | Read a detections CSV and print per-class metrics + bar chart |
-| `visualize_results.py` | Render a single-slide results diagram |
+Intrinsics JSON lives in `calibration/camera_intrinsics_latest.json`. Pass `--calibration calibration/camera_intrinsics_latest.json` to enable undistortion.
 
 ---
 
@@ -78,10 +92,10 @@ A full ArduPilot-SITL simulation of the RobotX navigation course with animated o
 ```bash
 conda create -y -n robotx python=3.10 opencv numpy pip
 conda activate robotx
-pip install -r requirements.txt   # if present, else: pip install pymavlink
+pip install pymavlink
 ```
 
-Or with the system Python on Ubuntu:
+Or on Ubuntu/Jetson:
 
 ```bash
 pip3 install opencv-python numpy pymavlink
