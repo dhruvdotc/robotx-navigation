@@ -230,3 +230,12 @@ simulation/**/cache/
 # Large local weights / image capture dumps
 yolo11n.pt
 yolo_comparison_test/path2_switch_proposal/captures/
+
+# ArduPilot SITL runtime artifacts (eeprom.bin persists FRAME_CLASS=1 across
+# launches from repo root - keep the file locally, just don't commit it).
+eeprom.bin
+/logs/
+/terrain/
+mav.parm
+# camera_live_feed.py detection outputs
+detection_logs/
