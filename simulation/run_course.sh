@@ -232,8 +232,8 @@ BRIDGE_PID=$!
 # --------------------------------------------------------------------------- #
 # 4. Visual mode: open the 4 xterm windows
 # --------------------------------------------------------------------------- #
+XTERM=(xterm -fa "Monospace" -fs 11)
 if [ "$VISUAL" -eq 1 ]; then
-  XTERM=(xterm -fa "Monospace" -fs 11)
 
   pmsg "[4/4] Opening display windows..."
 
@@ -254,16 +254,13 @@ if [ "$VISUAL" -eq 1 ]; then
     -e bash -lc "$CAM_CMD" &
   CAM_XT_PID=$!
   pmsg "      Window 3: camera_live_feed.py (+ OpenCV detection window)"
-
-  # Window: live GPS coordinates
-  "${XTERM[@]}" -T "Live GPS Coords" -geometry 70x16+10+560 \
-    -e bash -c "python3 '${REPO_ROOT}/simulation/gps_display.py' 2>&1 | tee '${RUN_DIR}/gps.log'" &
-  GPS_XT_PID=$!
-  pmsg "      Window 4: GPS display (lat / lon / alt / speed)"
+  pmsg "      Window 4: GPS display opens after GPS fix..."
 fi
 
 # --------------------------------------------------------------------------- #
 # Wait for SITL GPS/EKF fix
+# The probe binds udp:14552 -- GPS display xterm must open AFTER this exits
+# so both don't try to bind the same UDP port simultaneously.
 # --------------------------------------------------------------------------- #
 echo
 pmsg "Waiting for SITL GPS/EKF fix (this takes 30-90 s)..."
@@ -283,6 +280,14 @@ try:
 except Exception as e:
     print(f"WARN: readiness probe failed: {e}", file=sys.stderr)
 PY
+
+# Now open the GPS display -- probe has released udp:14552 so no port conflict.
+if [ "$VISUAL" -eq 1 ]; then
+  "${XTERM[@]}" -T "Live GPS Coords" -geometry 70x16+10+560 \
+    -e bash -c "python3 '${REPO_ROOT}/simulation/gps_display.py' 2>&1 | tee '${RUN_DIR}/gps.log'" &
+  GPS_XT_PID=$!
+  pmsg "      Window 4: GPS display (lat / lon / alt / speed)"
+fi
 
 # --------------------------------------------------------------------------- #
 # Start accuracy_verify.py (background; writes detections.csv + report)
