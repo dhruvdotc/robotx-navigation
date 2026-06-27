@@ -26,7 +26,30 @@ A Gazebo Harmonic scene where an ArduPilot-SITL drone flies a nadir camera over 
 
 ---
 
-## Run
+## Sim tests (one command, outputs collected automatically)
+
+```bash
+bash simulation/run_sim_test.sh           # headless + auto fly + collect outputs
+bash simulation/run_sim_test.sh --gui     # show Gazebo window + optional screen recording
+bash simulation/run_sim_test.sh --no-fly  # start sim but don't auto-fly (fly manually)
+```
+
+Each run creates `simulation/sim_tests/run_N/` with:
+
+| File | Contents |
+|------|----------|
+| `detections.csv` | Per-frame buoy detections with GPS estimates |
+| `accuracy_report.md` | Cross-referenced vs ground-truth buoy positions |
+| `summary.json` | Machine-readable metrics (duration, mean error, buoys found, pass/fail) |
+| `gz.log` | Gazebo and SITL stdout/stderr |
+| `verify.log` | accuracy_verify.py console output |
+| `recording.mp4` | Screen recording (--gui mode + ffmpeg available) |
+
+The run number increments automatically. A minimum 15-second sustained flight is enforced - short runs are flagged in the report but the folder is still saved.
+
+---
+
+## Run (manual / advanced)
 
 **Basic launch (one terminal):**
 

@@ -244,6 +244,7 @@ detection_logs/
 # trackable, but ignore the timestamped per-flight reports + raw detection CSVs).
 simulation/accuracy_logs/
 simulation/accuracy_report_*.md
+simulation/sim_tests/
 # Jetson / GCS artifacts
 .DS_Store
 .cursor/

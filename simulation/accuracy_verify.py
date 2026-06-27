@@ -25,6 +25,7 @@ gives the buoy's absolute local NED directly -- no hand-placed hover assumptions
 """
 import argparse
 import csv
+import json
 import math
 import os
 import re
@@ -157,7 +158,7 @@ def make_args(alt, no_undistort):
 
 
 def build_report(buoys, datum, rows, started, ended, min_duration, match_radius,
-                 csv_path, world_path, report_path):
+                 csv_path, world_path, report_path, summary_json_path=None):
     duration = ended - started
     n_det = len(rows)
     # Group detections by nearest ground-truth buoy of the same colour.
@@ -237,7 +238,44 @@ def build_report(buoys, datum, rows, started, ended, min_duration, match_radius,
     if os.path.abspath(latest) != os.path.abspath(report_path):
         with open(latest, "w", encoding="utf-8") as f:
             f.write(report)
-    return report, report_path, latest
+
+    colour_buoys_total = len([b for b in buoys if b["color"] in ("red", "green")])
+    summary = {
+        "timestamp": datetime.fromtimestamp(started).isoformat(timespec="seconds"),
+        "duration_s": round(duration, 1),
+        "duration_ok": dur_ok,
+        "n_detections": n_det,
+        "colour_buoys_detected": len(detected),
+        "colour_buoys_total": colour_buoys_total,
+        "mean_error_m": None if math.isnan(mean_err) else round(mean_err, 3),
+        "max_error_m": None if math.isnan(max_err) else round(max_err, 3),
+        "mean_confidence": None if math.isnan(mean_conf) else round(mean_conf, 3),
+        "unmatched_detections": unmatched,
+        "per_buoy": [
+            {
+                "name": b["name"],
+                "color": b["color"],
+                "true_north_m": b["north"],
+                "true_east_m": b["east"],
+                "detections": len(per_buoy[b["name"]]),
+                "mean_error_m": round(sum(d for d, _ in per_buoy[b["name"]]) / len(per_buoy[b["name"]]), 3)
+                    if per_buoy[b["name"]] else None,
+                "mean_confidence": round(sum(c for _, c in per_buoy[b["name"]]) / len(per_buoy[b["name"]]), 3)
+                    if per_buoy[b["name"]] else None,
+            }
+            for b in buoys
+        ],
+        "files": {
+            "detections_csv": os.path.basename(csv_path),
+            "accuracy_report": os.path.basename(report_path),
+        },
+    }
+    if summary_json_path:
+        os.makedirs(os.path.dirname(os.path.abspath(summary_json_path)), exist_ok=True)
+        with open(summary_json_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+
+    return report, report_path, latest, summary
 
 
 def _print_ros_help(missing, connect):
@@ -284,9 +322,11 @@ def report_from_csv(args, buoys, datum):
     ts = base[len("detections_"):-len(".csv")] if base.startswith("detections_") \
         else datetime.now().strftime("%Y%m%d_%H%M%S")
     report_path = os.path.join(args.report_dir, f"accuracy_report_{ts}.md")
-    report, rp, latest = build_report(
+    summary_json = os.path.join(os.path.dirname(report_path), "summary.json") \
+        if args.summary_json is None else args.summary_json
+    report, rp, latest, _ = build_report(
         buoys, datum, rows, started, ended, args.min_duration, args.match_radius,
-        csv_path, args.world, report_path)
+        csv_path, args.world, report_path, summary_json_path=summary_json)
     print("\n" + report)
     print(f"[INFO] offline report from {csv_path}")
     print(f"[INFO] report written: {rp}")
@@ -319,6 +359,8 @@ def main():
                     help="OFFLINE mode: skip ROS/MAVLink entirely and rebuild the "
                          "accuracy report from an already-logged detections CSV. "
                          "Needs NO rclpy / ROS -- pure stdlib + the world ground truth.")
+    ap.add_argument("--summary-json", default=None, metavar="PATH",
+                    help="Write a summary.json alongside the report (default: same dir as report).")
     args = ap.parse_args()
 
     buoys, datum = parse_world(args.world)
@@ -476,13 +518,15 @@ def main():
 
     started = state["started"] or t_launch
     ended = time.time()
-    report, rp, latest = build_report(
+    summary_json = args.summary_json or os.path.join(os.path.dirname(report_path), "summary.json")
+    report, rp, latest, _ = build_report(
         buoys, datum, rows, started, ended, args.min_duration, args.match_radius,
-        csv_path, args.world, report_path)
+        csv_path, args.world, report_path, summary_json_path=summary_json)
     print("\n" + report)
     print(f"[INFO] report written: {rp}")
     print(f"[INFO] latest report : {latest}")
     print(f"[INFO] detection log : {csv_path}")
+    print(f"[INFO] summary json  : {summary_json}")
     return 0
 
 
