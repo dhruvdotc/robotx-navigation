@@ -62,8 +62,10 @@
       </link>
     </model>
 
-    <!-- Ocean plane (kept from ucsd_robotx_demo) + ADDED collision so the drone can rest/arm
-         on the surface before takeoff instead of free-falling through a visual-only plane. -->
+    <!-- Ocean PHYSICS: an invisible collision-only plane at z=0 so the drone can rest/arm
+         on the surface before takeoff instead of free-falling. The VISUAL ocean is the
+         animated VRX coast_waves mesh below (its old flat gray-blue visual was removed so
+         it doesn't z-fight / occlude the wave surface). -->
     <model name="ocean_surface">
       <static>true</static>
       <pose>0 0 0 0 0 0</pose>
@@ -76,23 +78,49 @@
             </plane>
           </geometry>
         </collision>
-        <visual name="water_visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>500 500</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.0 0.1 0.3 0.85</ambient>
-            <diffuse>0.0 0.1 0.3 0.85</diffuse>
-            <specular>0.8 0.8 0.8 1.0</specular>
-            <emissive>0.0 0.0 0.02 0.0</emissive>
-          </material>
-          <transparency>0.15</transparency>
-        </visual>
       </link>
     </model>
+
+    <!-- Ocean VISUAL: VRX's animated Gerstner-wave ocean (visual-only, no collision).
+         coast_waves = a 6km x 6km water mesh (waterlow.dae) driven by libWaveVisual.so,
+         which displaces vertices in a GLSL shader using the wavefield params published on
+         /vrx/wavefield/parameters (see PublisherPlugin below) and applies a scrolling
+         normal map for fine ripple texture. This is the same setup VRX's sydney_regatta
+         uses. Resolves via GZ_SIM_RESOURCE_PATH (vrx_gz/share/vrx_gz/models) and the
+         plugin via GZ_SIM_SYSTEM_PLUGIN_PATH (vrx_gz/lib) -- both encoded in
+         run_robotx_uav_sitl.sh. Pure visual: does NOT affect physics/collision. -->
+    <include>
+      <uri>coast_waves</uri>
+      <name>ocean_waves</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Drives the wave animation: publishes wavefield parameters that libWaveVisual.so
+         subscribes to. Based on VRX sydney_regatta; gain bumped 0.3 -> 0.5 so the swell
+         reads more clearly as moving open water from the 10 m nadir view, while staying
+         gentle enough that the static (non-bobbing) buoys still look natural on the
+         surface. period 5 s. Verified animated via the nadir camera (frame-to-frame
+         delta confirms the surface moves). -->
+    <plugin filename="libPublisherPlugin.so" name="vrx::PublisherPlugin">
+      <message type="gz.msgs.Param" topic="/vrx/wavefield/parameters" every="2.0">
+        params {
+          key: "direction"
+          value { type: DOUBLE double_value: 0.0 }
+        }
+        params {
+          key: "gain"
+          value { type: DOUBLE double_value: 0.5 }
+        }
+        params {
+          key: "period"
+          value { type: DOUBLE double_value: 5 }
+        }
+        params {
+          key: "steepness"
+          value { type: DOUBLE double_value: 0 }
+        }
+      </message>
+    </plugin>
 
     <!-- ============================================================================
          RobotX navigation channel: 3 gates (red/green pairs) along +X at centerline Y=0.

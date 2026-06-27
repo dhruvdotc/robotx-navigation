@@ -237,5 +237,10 @@ eeprom.bin
 /logs/
 /terrain/
 mav.parm
+mav.tlog*
 # camera_live_feed.py detection outputs
 detection_logs/
+# accuracy_verify.py per-flight artifacts (keep the canonical accuracy_report.md
+# trackable, but ignore the timestamped per-flight reports + raw detection CSVs).
+simulation/accuracy_logs/
+simulation/accuracy_report_*.md

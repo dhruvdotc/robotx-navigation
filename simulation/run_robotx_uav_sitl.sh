@@ -23,15 +23,12 @@ set -eo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORLD="${REPO_ROOT}/simulation/gazebo/worlds/robotx_uav_course.sdf"
 
-# Toolchains live OUTSIDE the repo (override via env if relocated).
-ARDUPILOT_GAZEBO="${ARDUPILOT_GAZEBO:-$HOME/ardupilot_gazebo}"
-ARDUPILOT="${ARDUPILOT:-$HOME/ardupilot}"
+# --- Gazebo environment (resource/plugin paths) come from the shared env file so
+#     this launcher and run_demo_windows.sh can't drift. It sets GZ_SIM_*,
+#     LD_LIBRARY_PATH and the ARDUPILOT_GAZEBO / ARDUPILOT / VRX_GZ locations. ---
+# shellcheck source=gz_env.sh
+source "${REPO_ROOT}/simulation/gz_env.sh"
 SIM_VEHICLE="${ARDUPILOT}/Tools/autotest/sim_vehicle.py"
-
-# --- Gazebo environment (the resource paths this script exists to get right) ---
-export GZ_VERSION=harmonic
-export GZ_SIM_SYSTEM_PLUGIN_PATH="${ARDUPILOT_GAZEBO}/build${GZ_SIM_SYSTEM_PLUGIN_PATH:+:${GZ_SIM_SYSTEM_PLUGIN_PATH}}"
-export GZ_SIM_RESOURCE_PATH="${REPO_ROOT}/simulation/gazebo/models:${ARDUPILOT_GAZEBO}/models:${ARDUPILOT_GAZEBO}/worlds${GZ_SIM_RESOURCE_PATH:+:${GZ_SIM_RESOURCE_PATH}}"
 
 HEADLESS=0
 NO_SITL=0
@@ -52,6 +49,9 @@ done
   echo "ERROR: iris_with_standoffs not in ${ARDUPILOT_GAZEBO}/models (set ARDUPILOT_GAZEBO)." >&2; exit 1; }
 ls "${ARDUPILOT_GAZEBO}/build/"*.so >/dev/null 2>&1 || {
   echo "ERROR: ardupilot_gazebo plugins (*.so) not built in ${ARDUPILOT_GAZEBO}/build." >&2; exit 1; }
+[ -f "${VRX_GZ}/lib/libWaveVisual.so" ] && [ -d "${VRX_GZ}/share/vrx_gz/models/coast_waves" ] || {
+  echo "ERROR: VRX ocean assets missing (need ${VRX_GZ}/lib/libWaveVisual.so + share/vrx_gz/models/coast_waves)." >&2
+  echo "       Set VRX_GZ to your built vrx_gz install, or build vrx_ws." >&2; exit 1; }
 if [ "$NO_SITL" -eq 0 ]; then
   [ -f "$SIM_VEHICLE" ] || { echo "ERROR: sim_vehicle.py not at $SIM_VEHICLE (set ARDUPILOT)." >&2; exit 1; }
 fi

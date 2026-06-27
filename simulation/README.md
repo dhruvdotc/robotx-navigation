@@ -1,65 +1,97 @@
-# Gazebo Harmonic RobotX Demo (UAV Camera + Buoys)
+# Gazebo Harmonic RobotX UAV Course (camera + buoys + SITL flight)
 
-This folder contains a Gazebo Harmonic scene for UAV-overhead buoy detection inspired by VRX finals-style layouts.
+A Gazebo Harmonic scene where an ArduPilot-SITL drone flies a nadir camera over a
+RobotX-spec navigation channel (3 red/green gates) on an **animated ocean**, and
+the real `camera_live_feed.py` detector projects each buoy to GPS from the live
+camera topic.
 
-## What is included
+## The world: `gazebo/worlds/robotx_uav_course.sdf`
 
-- `gazebo/worlds/ucsd_robotx_demo.world.sdf`
-  - 500m x 500m ocean plane
-  - Flat ocean visual (no `gz-sim-waves-system` plugin — avoids missing-library errors on minimal installs)
-  - Entrance and 3 navigation gates with emissive red/green buoys
-  - Scan-the-code style light buoy target
-  - 8 dark marker buoys
-  - No default WAM-V include (avoids missing `model://wam-v`; add a Fuel/model URI if you need a USV)
-- `gazebo/models/ucsd_drone/model.sdf`
-  - Simple quadrotor geometry
-  - Downward-facing camera sensor on `/drone/camera`
-- `ros2_bridge/bridge.yaml`
-  - Bridges `/drone/camera` and `/clock` to ROS 2
-- `gazebo/launch/ucsd_demo_launch.py`
-  - Starts Gazebo, spawns UAV at `60 2 25`, starts bridge, prints topic list
+- **Animated ocean (VRX).** The water is VRX's `coast_waves` Gerstner-wave ocean
+  driven by `libWaveVisual.so`; a `vrx::PublisherPlugin` publishes the wavefield
+  parameters on `/vrx/wavefield/parameters`. It reads as moving open water with a
+  depth gradient and ripple texture — **visual only**, no physics/collision. A
+  separate invisible `ocean_surface` collision plane at z=0 lets the drone rest/arm.
+- **3 gates** (red/green Sur-Mark cylinders) along +X at Y=0, gates at East = 10,
+  25, 40 m; gate width 2.5 m. Plus a scan-the-code `light_buoy` at East=50.
+  Green is a spring-green emissive (~OpenCV hue 81) so the HSV detector's green
+  range (75–99) catches it without colliding with blue.
+- **`iris_uav`** (local model): stock iris airframe + ArduPilotPlugin (FDM UDP
+  9002, lockstep) with a fixed nadir `gimbal_nadir` camera pod, 1920×1080 with
+  calibration-matched intrinsics, publishing `/drone/camera`.
+- GPS datum = ArduPilot SITL's CMAC home, so SITL home matches the world origin.
 
-## Prerequisites
+## Prerequisites (Ubuntu 22.04 / WSL Ubuntu-22.04)
 
-- Ubuntu 22.04
-- ROS 2 Humble sourced
-- Gazebo Harmonic tools on path (`gz`)
-- `ros_gz_sim` and `ros_gz_bridge` installed
-- VRX (**`jazzy` branch**) built in `~/vrx_ws` — matches **Gazebo Harmonic** (`gz-sim8`). The `humble` branch targets Garden (`gz-sim7`) and will not build with Harmonic.
+- ROS 2 Humble (`/opt/ros/humble`), Gazebo Harmonic (`gz`), `ros_gz_image`.
+- ArduPilot SITL built (`~/ardupilot`) + `ardupilot_gazebo` plugin (`~/ardupilot_gazebo`).
+- **VRX** built in `~/vrx_ws` (supplies `coast_waves` + the wave plugins). Override
+  the location with `VRX_GZ=...` if installed elsewhere.
 
-## Run
+`simulation/gz_env.sh` is the single source of truth for the `GZ_SIM_*` resource /
+plugin paths (repo models first, then ardupilot_gazebo, then VRX) and is sourced by
+both launchers — don't hand-roll the env.
 
-From Ubuntu (or WSL Ubuntu), from the repository root:
+## Run it
 
-```bash
-source /opt/ros/humble/setup.bash
-bash simulation/run_end_to_end.sh
-```
-
-From PowerShell on Windows:
-
-```powershell
-.\simulation\run_end_to_end.ps1
-```
-
-If you already copied files into `~/vrx_ws/src/vrx/vrx_gz` and rebuilt:
+**Headless smoke test / scripted flight (one terminal):**
 
 ```bash
-source /opt/ros/humble/setup.bash
-source ~/vrx_ws/install/setup.bash
-ros2 launch vrx_gz ucsd_demo_launch.py
+bash simulation/run_robotx_uav_sitl.sh            # gz GUI + SITL (FDM lockstep)
+bash simulation/run_robotx_uav_sitl.sh --headless # gz server-only + SITL
+bash simulation/run_robotx_uav_sitl.sh --no-sitl  # gz only
 ```
+SITL MAVLink is at `tcp:127.0.0.1:5760` (FDM UDP 9002). `eeprom.bin` in the repo
+root persists `FRAME_CLASS=1` so arming works on non-wipe launches.
 
-## Verify camera stream
+**Live demo — three real windows on the WSLg display (for screen recording):**
 
 ```bash
-bash simulation/verify_sim_topics.sh
+bash simulation/run_demo_windows.sh
+```
+Opens (1) the Gazebo GUI with the animated ocean, (2) an xterm running the genuine
+`sim_vehicle.py` / MAVProxy console (real arm/mode/GPS text), and (3) an xterm
+running `camera_live_feed.py --ros-topic /drone/camera` with its real `[INFO]`/`[GPS]`
+output. It starts a background gz→ROS image bridge and exposes MAVProxy outs:
+`udp:14550` (fly_course), `udp:14551` (accuracy_verify), `udp:14552` (readiness probe).
+When it prints **READY**, start recording, then fly:
+
+```bash
+python3 simulation/fly_course.py          # 10 s countdown, then a cinematic GUIDED flight
 ```
 
-Then visualize with your preferred tool (for example `rqt_image_view` on `/drone/camera`).
+## Verify detection + GPS accuracy from a flight: `accuracy_verify.py`
 
-**If the image is blank:** the world must load **Physics**, **SceneBroadcaster**, **UserCommands**, and **Sensors** (`gz-sim-sensors-system`) so time advances and the camera publishes. In Gazebo, press **Play** (space) so RTF is not stuck at 0%; then `ros2 topic hz /drone/camera` should show ~30 Hz.
+Run it alongside a flight (it logs every detection live and writes a timestamped report):
 
-## Wave plugin note
+```bash
+python3 simulation/accuracy_verify.py --connect udp:127.0.0.1:14551
+```
+- Subscribes to `/drone/camera`, runs the exact `camera_live_feed.py` pipeline, and
+  reads live pose/attitude over MAVLink. For every **level** frame it projects each
+  detection to absolute local-NED + GPS using the drone's **live altitude** and logs
+  it in real time to `simulation/accuracy_logs/detections_<ts>.csv`.
+- On flight end (Ctrl-C / `--duration` / disarm-after-arm) it cross-references the
+  log against the world's ground-truth buoy positions and writes
+  `simulation/accuracy_report_<ts>.md` (+ refreshes `simulation/accuracy_report.md`):
+  per-buoy error (m), mean/max error, detection count + mean confidence.
+- A **15 s minimum** sustained-flight duration is enforced (shorter runs are flagged
+  in the report, not silently accepted).
 
-Animated waves were removed from the default world because `gz-sim-waves-system` is not available on all Harmonic setups (you would see `Could not find shared library`). The blue `ocean_surface` plane remains. To experiment with waves, install the full Gazebo Harmonic plugin set your distro provides, or add a third-party wave stack and update the world SDF accordingly.
+Typical result over the 3-gate course at 10 m: 6/6 colour buoys, mean error ~0.15 m,
+`light_buoy` an expected miss (black box, no colour from nadir).
+
+## Notes / gotchas
+
+- **ogre2 ignores the camera `<distortion>` block** ("ImageBrownDistortionModel is
+  not supported in ogre2") → the render is a clean pinhole, so run the detector with
+  `--no-undistort` (both demo launcher and accuracy_verify already do).
+- Don't reboot the FC in place — it breaks gz lockstep. Restart both processes.
+- "ArduPilot controller has reset" a couple of times at startup is normal; a
+  continuous loop is not.
+
+## Legacy
+
+The earlier flat-ocean scene (`ucsd_robotx_demo`, `run_end_to_end.sh`,
+`verify_sim_topics.sh`, `ros2_bridge/bridge.yaml`) and its `gz-sim-waves-system`
+note are superseded by the UAV course above but kept for reference.

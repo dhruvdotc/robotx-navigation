@@ -206,8 +206,57 @@ def find_working_camera(max_index: int, width: int, height: int) -> int | None:
     return None
 
 
+def ros_frame_source(topic: str):
+    """Yield (frame_bgr, topic) tuples from a live ROS 2 sensor_msgs/Image topic.
+
+    rclpy/cv_bridge are imported lazily here so the script still runs under the
+    project .venv (which has no ROS) for camera/video/image-dir sources; only
+    --ros-topic requires a sourced ROS 2 environment (system python).
+    """
+    try:
+        import rclpy
+        from cv_bridge import CvBridge
+        from sensor_msgs.msg import Image
+    except ImportError as exc:
+        print(
+            f"[ERROR] --ros-topic needs rclpy + cv_bridge; run under a sourced ROS 2 "
+            f"environment (e.g. `source /opt/ros/humble/setup.bash`). Import failed: {exc}"
+        )
+        return
+
+    bridge = CvBridge()
+    state = {"frame": None, "seq": 0}
+
+    def _cb(msg):
+        try:
+            state["frame"] = bridge.imgmsg_to_cv2(msg, "bgr8")
+            state["seq"] += 1
+        except Exception as exc:  # noqa: BLE001 - keep streaming on a bad frame
+            print(f"[WARN] Failed to convert ROS image: {exc}")
+
+    rclpy.init()
+    node = rclpy.create_node("camera_live_feed")
+    node.create_subscription(Image, topic, _cb, 10)
+    print(f"[INFO] Subscribed to ROS image topic {topic}; waiting for frames...")
+    last_seq = 0
+    try:
+        while rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+            if state["seq"] != last_seq:
+                last_seq = state["seq"]
+                yield state["frame"], topic
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
 def frame_source(args: argparse.Namespace):
-    """Yield (frame_bgr, label) tuples from an image dir, video file, or camera."""
+    """Yield (frame_bgr, label) tuples from a ROS topic, image dir, video file, or camera."""
+    if getattr(args, "ros_topic", None):
+        yield from ros_frame_source(args.ros_topic)
+        return
+
     if args.image_dir is not None:
         exts = (".jpg", ".jpeg", ".png", ".bmp")
         paths = sorted(
@@ -278,6 +327,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-index", type=int, default=10)
     parser.add_argument("--video-path", type=str, default=None, help="Read frames from a video file.")
     parser.add_argument("--image-dir", type=str, default=None, help="Read frames from a folder of images.")
+    parser.add_argument(
+        "--ros-topic", type=str, default=None,
+        help="Read frames live from a ROS 2 sensor_msgs/Image topic (needs a sourced ROS env), "
+        "e.g. --ros-topic /drone/camera.",
+    )
     parser.add_argument("--no-display", action="store_true", help="Disable the OpenCV preview window.")
     parser.add_argument("--width", type=int, default=1920)
     parser.add_argument("--height", type=int, default=1080)
