@@ -315,8 +315,18 @@ done
 # --------------------------------------------------------------------------- #
 pmsg "[2/4] Starting ArduPilot SITL..."
 cd "$REPO_ROOT"
+# --mavproxy-args=--daemon is CRITICAL here. sim_vehicle.py launches MAVProxy,
+# whose interactive console reads stdin. Because this whole command is a
+# background job in a non-interactive script (job control off), bash redirects
+# its stdin from /dev/null -- which delivers instant EOF. Without --daemon,
+# MAVProxy treats that EOF as "quit", unloads every module and exits the moment
+# it reaches the MAV> prompt; sim_vehicle then declares "MAVProxy exited" and
+# tears the SITL stack down, so nothing ever heartbeats on 14550-14552 and the
+# GPS-fix probe aborts the run. --daemon runs MAVProxy with no interactive
+# shell (it never reads stdin) while still forwarding to every --out target.
 env -u DISPLAY python3 "$SIM_VEHICLE" \
   -v ArduCopter -f gazebo-iris --model JSON --no-rebuild -I0 \
+  --mavproxy-args="--daemon" \
   --out=udp:127.0.0.1:14550 \
   --out=udp:127.0.0.1:14551 \
   --out=udp:127.0.0.1:14552 \
