@@ -70,7 +70,8 @@ Every run saves to `simulation/sim_tests/run_N/` (N auto-increments):
 | `detections.csv` | Per-frame buoy GPS projections |
 | `accuracy_report.md` | Cross-referenced vs ground-truth buoy positions |
 | `summary.json` | Machine-readable metrics: duration, mean error, buoys found |
-| `gz.log` | Gazebo + SITL stdout/stderr |
+| `gz.log` | Gazebo + image-bridge stdout/stderr |
+| `sitl.log` | ArduPilot SITL + MAVProxy console |
 | `fly.log` | fly_course.py output |
 | `verify.log` | accuracy_verify.py output |
 | `camera.log` | camera_live_feed.py output (visual mode only) |

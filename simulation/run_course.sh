@@ -8,7 +8,7 @@
 #
 #   No windows open. Progress is printed to the terminal as a percentage,
 #   with a milestone line each time a waypoint is reached and a status line
-#   every 5 seconds while flying between waypoints.
+#   every few seconds while flying between waypoints.
 #
 # VISUAL MODE (4 windows):
 #   bash simulation/run_course.sh --course 1 --visual
@@ -17,7 +17,7 @@
 #
 #   Opens four separate windows:
 #     1. Gazebo 3D view   -- animated VRX ocean + buoys + drone
-#     2. SITL console     -- ArduCopter arm / mode / GPS log (tail of gz.log)
+#     2. SITL console     -- ArduCopter / MAVProxy arm / mode / GPS log
 #     3. Camera detector  -- camera_live_feed.py text output + OpenCV window
 #     4. GPS coordinates  -- live lat / lon / alt AGL / speed / mode
 #
@@ -26,8 +26,9 @@
 #     detections.csv       per-frame buoy GPS projections
 #     accuracy_report.md   cross-referenced vs ground-truth positions
 #     summary.json         machine-readable metrics
-#     gz.log               Gazebo + SITL stdout/stderr
-#     fly.log              fly_course.py output (headless) or echoed (visual)
+#     gz.log               Gazebo (+ image bridge) stdout/stderr
+#     sitl.log             ArduPilot SITL + MAVProxy console
+#     fly.log              fly_course.py output
 #     verify.log           accuracy_verify.py output
 #     camera.log           camera_live_feed.py output (visual mode)
 #     gps.log              GPS display stream (visual mode)
@@ -40,7 +41,13 @@
 #   --speed N        Transit speed m/s (default: 1.5)
 #
 # Env overrides: ARDUPILOT, ARDUPILOT_GAZEBO, VRX_GZ, ROS_SETUP, ALTITUDE_M
-set -eo pipefail
+#
+# NOTE: this script deliberately does NOT use `set -e`. It is a long-running
+# orchestrator full of background jobs, monitoring loops and `grep` calls (grep
+# exits non-zero on no-match), so `set -e` causes surprise exits. Errors that
+# matter are checked explicitly. Ctrl-C is handled by a trap that tears the
+# whole simulation down cleanly (see kill_all_sim / cleanup below).
+set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.bash}"
@@ -58,12 +65,12 @@ SPEED=1.5
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --course)    COURSE="$2";            shift 2 ;;
+    --course)    COURSE="$2";             shift 2 ;;
     --course=*)  COURSE="${1#--course=}"; shift ;;
-    --visual)    VISUAL=1;               shift ;;
-    --no-fly)    AUTO_FLY=0;             shift ;;
-    --speed)     SPEED="$2";             shift 2 ;;
-    --speed=*)   SPEED="${1#--speed=}";  shift ;;
+    --visual)    VISUAL=1;                shift ;;
+    --no-fly)    AUTO_FLY=0;              shift ;;
+    --speed)     SPEED="$2";              shift 2 ;;
+    --speed=*)   SPEED="${1#--speed=}";   shift ;;
     -h|--help)   grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown arg: $1 (try --help)" >&2; exit 2 ;;
   esac
@@ -87,8 +94,9 @@ case "$COURSE" in
      TOTAL_WP=6 ;;
   *) echo "ERROR: --course must be 1, 2, or 3" >&2; exit 2 ;;
 esac
-# /world/<name>/stats is published by the Gazebo physics server itself;
-# stale image_bridge processes cannot fake it (unlike /drone/camera).
+# /world/<name>/stats is published by the Gazebo physics server itself once the
+# world has finished loading (all plugins, incl. ArduPilotPlugin's FDM port,
+# are up). A stale image_bridge cannot fake it -- unlike /drone/camera.
 GZ_READY_TOPIC="/world/${WORLD_NAME}/stats"
 
 # --------------------------------------------------------------------------- #
@@ -103,6 +111,11 @@ for d in "${SIM_TESTS_DIR}"/run_*/; do
 done
 RUN_DIR="${SIM_TESTS_DIR}/run_${RUN_N}"
 mkdir -p "$RUN_DIR"
+
+GZ_LOG="${RUN_DIR}/gz.log"
+SITL_LOG="${RUN_DIR}/sitl.log"
+FLY_LOG="${RUN_DIR}/fly.log"
+GPS_READY_FILE="${RUN_DIR}/.gps_ready"
 
 MODE_STR="headless"
 [ "$VISUAL" -eq 1 ] && MODE_STR="visual (4 windows)"
@@ -128,33 +141,80 @@ if [ "$VISUAL" -eq 1 ]; then
 fi
 
 # --------------------------------------------------------------------------- #
+# Helpers
+# --------------------------------------------------------------------------- #
+ts()   { date '+%H:%M:%S'; }
+pmsg() { echo "[$(ts)] $*"; }
+
+# Comprehensive SIGKILL net for every process this sim stack can spawn. Used in
+# BOTH pre-flight (clear last run's leftovers) and teardown (don't leave any).
+#
+# This is the safety net that makes runs independent of how the previous one
+# ended -- clean exit, Ctrl-C, crash, or kill. It matches by command-line
+# substring because children get orphaned (reparented to PID 1) when their
+# launcher dies, so tracked PIDs alone are not enough.
+#
+# IMPORTANT pattern notes:
+#  * The image bridge runs as ".../ros_gz_image/image_bridge /drone/camera" --
+#    the binary is image_bridge (SLASH before it, not a space). Match the bare
+#    word "image_bridge" or it will never be killed (this was the original bug
+#    that left orphaned bridges faking /drone/camera readiness forever).
+#  * run_course.sh's own command line is "bash .../run_course.sh --course N",
+#    which contains none of these patterns, so we never SIGKILL ourselves.
+kill_all_sim() {
+  pkill -9 -f "arducopter"                  2>/dev/null
+  pkill -9 -f "sim_vehicle.py"              2>/dev/null
+  pkill -9 -f "mavproxy"                    2>/dev/null
+  pkill -9 -f "gz sim"                      2>/dev/null
+  pkill -9 -f "simulation/gazebo/worlds"    2>/dev/null
+  pkill -9 -f "image_bridge"               2>/dev/null
+  pkill -9 -f "accuracy_verify.py"         2>/dev/null
+  pkill -9 -f "camera_live_feed.py"        2>/dev/null
+  pkill -9 -f "gps_display.py"             2>/dev/null
+  pkill -9 -f "fly_course.py"              2>/dev/null
+  return 0
+}
+
+# --------------------------------------------------------------------------- #
 # PIDs to clean up on exit
 # --------------------------------------------------------------------------- #
 GZ_PID=""; SITL_PID=""; BRIDGE_PID=""
 FLY_PID=""; VERIFY_PID=""
 SITL_XT_PID=""; CAM_XT_PID=""; GPS_XT_PID=""
-
-ts() { date '+%H:%M:%S'; }
-pmsg() { echo "[$(ts)] $*"; }
+CLEANED=0
 
 cleanup() {
+  [ "$CLEANED" = 1 ] && return 0
+  CLEANED=1
   echo
   pmsg "Tearing down run_${RUN_N}..."
-  for pid_var in GPS_XT_PID CAM_XT_PID SITL_XT_PID FLY_PID VERIFY_PID BRIDGE_PID SITL_PID GZ_PID; do
-    eval pid="\${${pid_var}}"
+
+  # 1. Give accuracy_verify a chance to flush its report. It is launched with
+  #    `exec` so VERIFY_PID is the python itself -- SIGTERM reaches its handler,
+  #    which writes accuracy_report.md + summary.json before exiting.
+  if [ -n "$VERIFY_PID" ] && kill -0 "$VERIFY_PID" 2>/dev/null; then
+    pmsg "      Asking accuracy_verify to write its report..."
+    kill -TERM "$VERIFY_PID" 2>/dev/null || true
+    for _ in $(seq 1 12); do
+      kill -0 "$VERIFY_PID" 2>/dev/null || break
+      sleep 0.5
+    done
+  fi
+
+  # 2. Terminate tracked PIDs (xterms, fly, gz, sitl, bridge).
+  for pid_var in GPS_XT_PID CAM_XT_PID SITL_XT_PID FLY_PID BRIDGE_PID SITL_PID GZ_PID; do
+    eval pid="\${${pid_var}:-}"
     [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
   done
-  pkill -9 -f "gz sim"                            2>/dev/null || true
-  pkill -9 -f "gz-sim-server"                     2>/dev/null || true
-  pkill -9 -f "gz-sim-gui"                        2>/dev/null || true
-  pkill -9 -f "ros_gz_image image_bridge"         2>/dev/null || true
-  pkill -9 -f "arducopter.*-I0"                   2>/dev/null || true
-  pkill -9 -f "gps_display.py"                    2>/dev/null || true
 
-  # Stamp run metadata into summary.json if it was written
+  # 3. SIGKILL net for anything orphaned (the real guarantee of a clean slate).
+  kill_all_sim
+  rm -f "$GPS_READY_FILE" 2>/dev/null || true
+
+  # Stamp run metadata into summary.json if it was written.
   local sjson="${RUN_DIR}/summary.json"
   if [ -f "$sjson" ]; then
-    python3 - "$sjson" "$RUN_N" "$RUN_DIR" "$COURSE" "$COURSE_NAME" "$MODE_STR" <<'PY'
+    python3 - "$sjson" "$RUN_N" "$RUN_DIR" "$COURSE" "$COURSE_NAME" "$MODE_STR" <<'PY' || true
 import json, sys, os
 path, run_n, run_dir, course_n, course_name, mode = \
     sys.argv[1], int(sys.argv[2]), sys.argv[3], int(sys.argv[4]), sys.argv[5], sys.argv[6]
@@ -164,15 +224,13 @@ d.update(run=run_n, course=course_n, course_name=course_name, mode=mode)
 for fname in os.listdir(run_dir):
     if fname.endswith(".mp4"):
         d.setdefault("files", {})["recording"] = fname
-    elif fname == "gz.log":
-        d.setdefault("files", {})["gz_log"] = fname
 with open(path, "w") as f:
     json.dump(d, f, indent=2)
 print(f"[INFO] summary.json updated: run={run_n}, mode={mode}")
 PY
   fi
 
-  # Generate detection map
+  # Generate the detection map.
   pmsg "Generating detection map (map.png)..."
   if python3 "${REPO_ROOT}/simulation/plot_run.py" "$RUN_DIR" 2>/dev/null; then
     pmsg "map.png written."
@@ -187,42 +245,37 @@ PY
   echo "================================================================"
   ls -lh "$RUN_DIR" 2>/dev/null || true
 }
-trap cleanup INT TERM EXIT
+
+# On Ctrl-C / TERM: tear down and exit (do NOT let the script resume after the
+# handler). The EXIT trap also calls cleanup, but the CLEANED guard makes it a
+# no-op the second time.
+on_signal() { echo; pmsg "Signal received -- stopping."; cleanup; exit 130; }
+trap on_signal INT TERM
+trap cleanup EXIT
 
 # --------------------------------------------------------------------------- #
-# Pre-flight: kill ALL stale simulation processes from previous runs.
-#
-# Critical: image_bridge subscribes to /drone/camera on the gz bus. Even with
-# no Gazebo server alive, a surviving bridge makes `gz topic -l` report
-# /drone/camera, causing the readiness check to pass in <2 s while the new
-# world hasn't loaded. Use SIGKILL (-9) and wait until /drone/camera actually
-# disappears before proceeding.
+# Pre-flight: clear every leftover from previous runs, then confirm the gz bus
+# is actually clean before starting a fresh world.
 # --------------------------------------------------------------------------- #
 pmsg "Pre-flight: clearing stale simulation processes..."
-pkill -9 -f "gz sim"                        2>/dev/null || true
-pkill -9 -f "gz-sim-server"                 2>/dev/null || true
-pkill -9 -f "gz-sim-gui"                    2>/dev/null || true
-pkill -9 -f "arducopter"                    2>/dev/null || true
-pkill -9 -f "mavproxy.py"                   2>/dev/null || true
-pkill -9 -f "sim_vehicle.py"                2>/dev/null || true
-pkill -9 -f "ros_gz_image image_bridge"     2>/dev/null || true
-pkill -9 -f "accuracy_verify.py"            2>/dev/null || true
-pkill -9 -f "camera_live_feed.py"           2>/dev/null || true
-pkill -9 -f "gps_display.py"               2>/dev/null || true
+kill_all_sim
 
-# Wait until the gz bus no longer sees /drone/camera (stale bridges gone)
-pmsg "      Waiting for stale gz topics to clear..."
+pmsg "      Waiting for the gz bus to clear (stale /drone/camera to vanish)..."
+cleared=0
 for _ in $(seq 1 15); do
-  gz topic -l 2>/dev/null | grep -q "/drone/camera" || break
+  if ! gz topic -l 2>/dev/null | grep -q "/drone/camera"; then cleared=1; break; fi
   sleep 1
 done
-# One extra second for sockets to fully release
-sleep 1
+if [ "$cleared" -eq 1 ]; then
+  pmsg "      Bus clean."
+else
+  pmsg "      WARN: /drone/camera still present; a bridge may be stuck. Continuing."
+fi
+sleep 1   # let UDP sockets fully release
 
 # --------------------------------------------------------------------------- #
 # 1. Gazebo
 # --------------------------------------------------------------------------- #
-GZ_LOG="${RUN_DIR}/gz.log"
 if [ "$VISUAL" -eq 1 ]; then
   pmsg "[1/4] Starting Gazebo (GUI window)..."
   gz sim -v3 -r "$WORLD" >"$GZ_LOG" 2>&1 &
@@ -232,10 +285,10 @@ else
 fi
 GZ_PID=$!
 
-pmsg "      Waiting for Gazebo physics server: ${GZ_READY_TOPIC} (30-90 s)..."
+pmsg "      Waiting for Gazebo physics server (${GZ_READY_TOPIC}; world load ~30-90 s)..."
 GZ_START=$(date +%s)
 ready=0
-for _ in $(seq 1 120); do
+for _ in $(seq 1 150); do
   if gz topic -l 2>/dev/null | grep -qx "${GZ_READY_TOPIC}"; then ready=1; break; fi
   if ! kill -0 "$GZ_PID" 2>/dev/null; then
     echo "ERROR: Gazebo exited early (see $GZ_LOG)." >&2; exit 1
@@ -249,8 +302,16 @@ else
   pmsg "      WARN: ${GZ_READY_TOPIC} not seen after ${GZ_ELAPSED}s; continuing anyway."
 fi
 
+# Confirm the nadir camera sensor is actually rendering before we wire up the
+# bridge + detector (this only appears now that the bus is clean).
+pmsg "      Waiting for /drone/camera sensor..."
+for _ in $(seq 1 30); do
+  gz topic -l 2>/dev/null | grep -qx "/drone/camera" && break
+  sleep 1
+done
+
 # --------------------------------------------------------------------------- #
-# 2. SITL
+# 2. ArduPilot SITL  (own log so the SITL window shows only SITL/MAVProxy text)
 # --------------------------------------------------------------------------- #
 pmsg "[2/4] Starting ArduPilot SITL..."
 cd "$REPO_ROOT"
@@ -259,7 +320,7 @@ env -u DISPLAY python3 "$SIM_VEHICLE" \
   --out=udp:127.0.0.1:14550 \
   --out=udp:127.0.0.1:14551 \
   --out=udp:127.0.0.1:14552 \
-  >>"$GZ_LOG" 2>&1 &
+  >"$SITL_LOG" 2>&1 &
 SITL_PID=$!
 
 # --------------------------------------------------------------------------- #
@@ -272,20 +333,19 @@ bash -c "source '${ROS_SETUP}'; export GZ_VERSION=harmonic; \
 BRIDGE_PID=$!
 
 # --------------------------------------------------------------------------- #
-# 4. Visual mode: open the 4 xterm windows
+# 4. Visual mode: open the display windows
 # --------------------------------------------------------------------------- #
 XTERM=(xterm -fa "Monospace" -fs 11)
 if [ "$VISUAL" -eq 1 ]; then
-
   pmsg "[4/4] Opening display windows..."
 
-  # Window: SITL + Gazebo log (tail gz.log so the xterm shows live SITL output)
-  "${XTERM[@]}" -T "SITL + Gazebo log" -geometry 110x32+10+20 \
-    -e bash -c "tail -n 60 -f '${GZ_LOG}'" &
+  # Window 2: SITL + MAVProxy console (tail its dedicated log).
+  "${XTERM[@]}" -T "SITL + MAVProxy console" -geometry 110x32+10+20 \
+    -e bash -c "echo '=== ArduPilot SITL + MAVProxy ==='; tail -n 200 -f '${SITL_LOG}'" &
   SITL_XT_PID=$!
-  pmsg "      Window 2: SITL console (SITL + Gazebo log)"
+  pmsg "      Window 2: SITL console"
 
-  # Window: camera_live_feed.py (opens its own OpenCV detection window)
+  # Window 3: camera_live_feed.py (opens its own OpenCV detection window).
   CAM_CMD="cd '${REPO_ROOT}' && source '${ROS_SETUP}' && \
     echo '=== camera_live_feed.py  [nadir camera] ===' && \
     python3 camera_live_feed.py \
@@ -295,28 +355,26 @@ if [ "$VISUAL" -eq 1 ]; then
   "${XTERM[@]}" -T "Camera Detector" -geometry 110x28+750+20 \
     -e bash -lc "$CAM_CMD" &
   CAM_XT_PID=$!
-  pmsg "      Window 3: camera_live_feed.py (+ OpenCV detection window)"
+  pmsg "      Window 3: camera_live_feed.py (+ OpenCV window)"
   pmsg "      Window 4: GPS display opens after GPS fix..."
 fi
 
 # --------------------------------------------------------------------------- #
-# Wait for SITL GPS/EKF fix
-# The probe binds udp:14552 -- GPS display xterm must open AFTER this exits
-# so both don't try to bind the same UDP port simultaneously.
+# Wait for SITL GPS/EKF fix. The probe binds udp:14552, so the GPS-display
+# window (which also binds 14552) must open only AFTER this exits.
 # --------------------------------------------------------------------------- #
 echo
 pmsg "Waiting for SITL GPS/EKF fix (this takes 30-90 s)..."
-GPS_READY_FILE="${RUN_DIR}/.gps_ready"
+rm -f "$GPS_READY_FILE" 2>/dev/null || true
 python3 - "$GPS_READY_FILE" <<'PY'
-import sys, time, os
+import sys, time
 from pymavlink import mavutil
 ready_file = sys.argv[1]
 try:
     m = mavutil.mavlink_connection("udp:127.0.0.1:14552")
-    hb = m.wait_heartbeat(timeout=90)
-    if hb is None:
-        print("ERROR: no SITL heartbeat in 90 s -- SITL may have crashed or failed to",
-              "connect to Gazebo FDM port (UDP 9002). Check the SITL console window.",
+    if m.wait_heartbeat(timeout=90) is None:
+        print("ERROR: no SITL heartbeat in 90 s -- SITL likely never connected to",
+              "the Gazebo FDM (UDP 9002). Check sitl.log / the SITL window.",
               file=sys.stderr)
         sys.exit(1)
     deadline = time.time() + 120
@@ -326,8 +384,8 @@ try:
             print(f"   SITL READY: GPS lat={msg.lat/1e7:.6f}  lon={msg.lon/1e7:.6f}")
             open(ready_file, "w").close()
             sys.exit(0)
-    print("ERROR: SITL heartbeat OK but GPS position never arrived in 120 s.",
-          "SITL may not be connected to Gazebo FDM (UDP 9002).", file=sys.stderr)
+    print("ERROR: heartbeat OK but GPS position never arrived in 120 s.",
+          file=sys.stderr)
     sys.exit(1)
 except SystemExit:
     raise
@@ -336,14 +394,13 @@ except Exception as e:
     sys.exit(1)
 PY
 if [ ! -f "$GPS_READY_FILE" ]; then
-  pmsg "ABORT: SITL did not get a GPS fix. Nothing to fly."
-  pmsg "       Window 2 (SITL console) will show the ArduCopter error."
-  pmsg "       Common causes: Gazebo ArduPilot plugin didn't finish loading;"
-  pmsg "       re-run once Gazebo has fully appeared before SITL starts."
+  pmsg "ABORT: SITL never got a GPS fix -- nothing to fly."
+  pmsg "       See ${SITL_LOG} (or the SITL window) for the ArduCopter error."
   exit 1
 fi
+rm -f "$GPS_READY_FILE" 2>/dev/null || true
 
-# Now open the GPS display -- probe has released udp:14552 so no port conflict.
+# GPS display window (visual): now safe to bind 14552.
 if [ "$VISUAL" -eq 1 ]; then
   "${XTERM[@]}" -T "Live GPS Coords" -geometry 70x16+10+560 \
     -e bash -c "python3 '${REPO_ROOT}/simulation/gps_display.py' 2>&1 | tee '${RUN_DIR}/gps.log'" &
@@ -352,11 +409,12 @@ if [ "$VISUAL" -eq 1 ]; then
 fi
 
 # --------------------------------------------------------------------------- #
-# Start accuracy_verify.py (background; writes detections.csv + report)
+# accuracy_verify.py -- background detection logger. `exec` makes VERIFY_PID the
+# python itself, so the cleanup SIGTERM reaches its report-writing handler.
 # --------------------------------------------------------------------------- #
 echo
-pmsg "Starting accuracy_verify.py (background detection logger -> ${RUN_DIR})..."
-bash -c "source '${ROS_SETUP}'; python3 '${REPO_ROOT}/simulation/accuracy_verify.py' \
+pmsg "Starting accuracy_verify.py (detection logger -> ${RUN_DIR})..."
+bash -c "source '${ROS_SETUP}'; exec python3 '${REPO_ROOT}/simulation/accuracy_verify.py' \
   --world '${WORLD}' \
   --connect udp:127.0.0.1:14551 \
   --out-dir '${RUN_DIR}' \
@@ -366,19 +424,68 @@ bash -c "source '${ROS_SETUP}'; python3 '${REPO_ROOT}/simulation/accuracy_verify
 VERIFY_PID=$!
 
 # --------------------------------------------------------------------------- #
-# Auto-fly (or wait for manual flight)
+# Headless progress monitor: tail fly.log and print a percentage + status.
+# fly_course.py markers we key off (note: --countdown 0 means it never prints
+# "FLIGHT START", so we detect flight state from these instead):
+#   "GPS/position OK"          -> got GPS fix
+#   "ARMED"                    -> armed
+#   "-> <label> (N=..,E=..)"   -> transiting to a waypoint
+#   "reached <label> -- held"  -> a waypoint is complete (counts toward %)
 # --------------------------------------------------------------------------- #
-FLY_LOG="${RUN_DIR}/fly.log"
+monitor_headless() {
+  pmsg "=== FLIGHT IN PROGRESS | ${COURSE_NAME} | ${TOTAL_WP} waypoints ==="
+  echo
+  local last_reached=0 last_status=0 reached pct now_ts now_str label current
 
+  while kill -0 "$FLY_PID" 2>/dev/null; do
+    now_ts=$(date +%s); now_str=$(ts)
+
+    reached=$(grep -c "reached .* -- held" "$FLY_LOG" 2>/dev/null) || reached=0
+    [[ "$reached" =~ ^[0-9]+$ ]] || reached=0
+    pct=$(( reached * 100 / TOTAL_WP ))
+
+    # Milestone line for each newly completed waypoint.
+    while [ "$last_reached" -lt "$reached" ]; do
+      last_reached=$(( last_reached + 1 ))
+      label=$(grep "reached .* -- held" "$FLY_LOG" 2>/dev/null \
+              | sed -n "${last_reached}p" | sed 's/.*reached //; s/ -- held.*//')
+      echo "[${now_str}] $(printf '%3d' "$pct")% | waypoint ${last_reached}/${TOTAL_WP} reached: ${label}"
+      last_status=0   # force an immediate status line after a milestone
+    done
+
+    # Status line every ~4 s between milestones.
+    if [ $(( now_ts - last_status )) -ge 4 ]; then
+      last_status=$now_ts
+      if grep -qE "(reached .* -- held|-> .* \(N=)" "$FLY_LOG" 2>/dev/null; then
+        current=$(grep -e "-> " "$FLY_LOG" 2>/dev/null | tail -1 | sed 's/.*-> //; s/ (N=.*//')
+        echo "[${now_str}] $(printf '%3d' "$pct")% | ${last_reached}/${TOTAL_WP} done | flying to: ${current:-?}"
+      elif grep -q "ARMED" "$FLY_LOG" 2>/dev/null; then
+        echo "[${now_str}]   0% | armed -- climbing to altitude..."
+      elif grep -q "GPS/position OK" "$FLY_LOG" 2>/dev/null; then
+        echo "[${now_str}]   0% | GPS fix -- arming..."
+      else
+        echo "[${now_str}]   0% | waiting for GPS / arming..."
+      fi
+    fi
+    sleep 2
+  done
+  echo
+  pmsg "100% | flight finished."
+}
+
+# --------------------------------------------------------------------------- #
+# Auto-fly (or hand off to manual flight)
+# --------------------------------------------------------------------------- #
 if [ "$AUTO_FLY" -eq 0 ]; then
   echo
   pmsg "Sim running. Fly manually when ready:"
   pmsg "  python3 simulation/fly_course.py --course ${COURSE} --connect udp:127.0.0.1:14550"
   pmsg "Ctrl-C to stop and save outputs."
   wait "$GZ_PID" 2>/dev/null || true
+  exit 0
+fi
 
-elif [ "$VISUAL" -eq 1 ]; then
-  # ---- VISUAL AUTO-FLY ---------------------------------------------------- #
+if [ "$VISUAL" -eq 1 ]; then
   echo
   echo "================================================================"
   echo " ALL WINDOWS ARE UP:"
@@ -391,79 +498,25 @@ elif [ "$VISUAL" -eq 1 ]; then
   echo "================================================================"
   echo
   sleep 10
-
   pmsg "Auto-fly: ${COURSE_NAME}"
   python3 "${REPO_ROOT}/simulation/fly_course.py" \
-    --connect udp:127.0.0.1:14550 \
-    --course "${COURSE}" \
-    --speed "${SPEED}" \
-    --countdown 0 \
-    2>&1 | tee "$FLY_LOG"
-
-  pmsg "Flight complete. Waiting for accuracy_verify to finish..."
-  sleep 3
-  kill "$VERIFY_PID" 2>/dev/null || true
-  wait "$VERIFY_PID" 2>/dev/null || true
-
+    --connect udp:127.0.0.1:14550 --course "${COURSE}" \
+    --speed "${SPEED}" --countdown 0 2>&1 | tee "$FLY_LOG"
 else
-  # ---- HEADLESS AUTO-FLY with PROGRESS ------------------------------------ #
   echo
   pmsg "Auto-fly starting in 5 s..."
   sleep 5
-
   python3 "${REPO_ROOT}/simulation/fly_course.py" \
-    --connect udp:127.0.0.1:14550 \
-    --course "${COURSE}" \
-    --speed "${SPEED}" \
-    --countdown 0 \
-    >"$FLY_LOG" 2>&1 &
+    --connect udp:127.0.0.1:14550 --course "${COURSE}" \
+    --speed "${SPEED}" --countdown 0 >"$FLY_LOG" 2>&1 &
   FLY_PID=$!
-
   echo
-  pmsg "=== FLIGHT IN PROGRESS | ${COURSE_NAME} | ${TOTAL_WP} waypoints ==="
-  echo
-
-  LAST_REACHED=0
-  LAST_STATUS_TIME=0
-
-  while kill -0 "$FLY_PID" 2>/dev/null; do
-    NOW_TS=$(date +%s)
-    NOW_STR=$(ts)
-
-    REACHED=$(grep -c "reached .* -- held" "$FLY_LOG" 2>/dev/null || echo 0)
-    PCT=$(( REACHED * 100 / TOTAL_WP ))
-
-    # Print a milestone line for each newly completed waypoint
-    while [ "$LAST_REACHED" -lt "$REACHED" ]; do
-      LAST_REACHED=$(( LAST_REACHED + 1 ))
-      LABEL=$(grep "reached .* -- held" "$FLY_LOG" 2>/dev/null \
-              | sed -n "${LAST_REACHED}p" \
-              | sed 's/.*reached //' | sed 's/ -- held.*//' || true)
-      echo "[${NOW_STR}] ${PCT}% | waypoint ${LAST_REACHED}/${TOTAL_WP} reached: ${LABEL}"
-      LAST_STATUS_TIME=0  # trigger immediate status print after milestone
-    done
-
-    # Print a status line every 5 seconds between milestones
-    if [ $(( NOW_TS - LAST_STATUS_TIME )) -ge 5 ]; then
-      LAST_STATUS_TIME=$NOW_TS
-      if grep -q "FLIGHT START" "$FLY_LOG" 2>/dev/null; then
-        CURRENT=$(grep "\-> .* (N=" "$FLY_LOG" 2>/dev/null | tail -1 \
-                  | sed 's/.*-> //' | sed 's/ (N=.*//' || true)
-        echo "[${NOW_STR}] ${PCT}% | ${LAST_REACHED}/${TOTAL_WP} done | flying to: ${CURRENT:-?}"
-      elif grep -q "ARMED" "$FLY_LOG" 2>/dev/null; then
-        echo "[${NOW_STR}]   0% | armed -- climbing to altitude..."
-      else
-        echo "[${NOW_STR}]   0% | waiting for GPS / arming..."
-      fi
-    fi
-
-    sleep 2
-  done
-
-  wait "$FLY_PID" || true
-  echo
-  pmsg "Flight complete. Waiting for accuracy_verify to finish..."
-  sleep 3
-  kill "$VERIFY_PID" 2>/dev/null || true
-  wait "$VERIFY_PID" 2>/dev/null || true
+  monitor_headless
+  wait "$FLY_PID" 2>/dev/null || true
 fi
+
+# Flight done: let accuracy_verify flush, then cleanup() (via EXIT) tears down.
+pmsg "Flight complete. Finalizing accuracy report..."
+sleep 3
+# cleanup() (EXIT trap) handles report flush, teardown, map and summary.
+exit 0
