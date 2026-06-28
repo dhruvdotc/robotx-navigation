@@ -8,6 +8,7 @@ Usage:
 """
 import argparse
 import csv
+import glob
 import json
 import math
 import os
@@ -57,6 +58,27 @@ def parse_world(world_path):
         buoys.append({"name": name, "color": color,
                       "east": float(pose.group(1)), "north": float(pose.group(2))})
     return buoys
+
+
+def find_detections_csv(run_dir, summary):
+    """Locate the detections CSV for a run.
+
+    accuracy_verify.py writes a TIMESTAMPED `detections_<ts>.csv` (never a plain
+    `detections.csv`) and records its basename in summary.json -> files. The old
+    hardcoded "detections.csv" therefore never matched, so every map plotted zero
+    detections. Resolve in order: (1) the name recorded in summary.json, (2) the
+    newest detections_*.csv actually on disk, (3) legacy plain detections.csv.
+    """
+    name = (summary.get("files") or {}).get("detections_csv")
+    if name:
+        p = os.path.join(run_dir, name)
+        if os.path.isfile(p):
+            return p
+    candidates = sorted(glob.glob(os.path.join(run_dir, "detections_*.csv")),
+                        key=os.path.getmtime, reverse=True)
+    if candidates:
+        return candidates[0]
+    return os.path.join(run_dir, "detections.csv")
 
 
 def load_detections(csv_path):
@@ -110,18 +132,18 @@ def find_latest_run():
 # ------------------------------------------------------------------ main plot
 def make_map(run_dir, world_path, out_path=None):
     run_name = os.path.basename(run_dir)
-    csv_path  = os.path.join(run_dir, "detections.csv")
     json_path = os.path.join(run_dir, "summary.json")
     out_path  = out_path or os.path.join(run_dir, "map.png")
-
-    buoys      = parse_world(world_path)
-    detections = load_detections(csv_path)
-    matched    = match_detections(detections, buoys)
 
     summary = {}
     if os.path.isfile(json_path):
         with open(json_path, encoding="utf-8") as f:
             summary = json.load(f)
+
+    csv_path   = find_detections_csv(run_dir, summary)
+    buoys      = parse_world(world_path)
+    detections = load_detections(csv_path)
+    matched    = match_detections(detections, buoys)
 
     duration   = summary.get("duration_s", 0)
     dur_ok     = summary.get("duration_ok", True)
