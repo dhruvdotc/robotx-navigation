@@ -234,7 +234,7 @@ All three courses contain floating debris objects designed to generate false-pos
 
 Key difference from real buoys: **no emissive material**. Real buoys have a bright emissive component; obstacles rely only on ambient/diffuse lighting, so they look duller from nadir. The detector should suppress them via confidence thresholding and size gating, but the olive panels in particular will stress-test the green HSV range boundary.
 
-Obstacles are placed outside the gate corridors (|lateral offset| > 3 m from each course centreline) so they do not occlude the actual gates.
+Obstacles are placed clear of the gate corridors (so they never occlude a gate) yet inside the nadir camera's swept footprint, so they actually appear in frame. Because the drone holds a North heading (`WP_YAW_BEHAVIOR=0`), the binding cross-track reach is the camera's *vertical* FOV — only ±4.1 m at 10 m AGL — for legs flown East (Course 1, Course 2 strips, Course 3 leg 1), and the *horizontal* FOV (±7.3 m) for the North-bound Course 3 leg 2. Distractors are offset ~3 m laterally on East legs and ~4 m on the North leg. (Earlier versions sat at 5–12 m offsets, outside every frame.)
 
 ## Technical Notes
 
