@@ -75,15 +75,21 @@ done
 case "$COURSE" in
   1) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/robotx_uav_course.sdf"
      COURSE_NAME="Course 1: Straight Navigation Channel"
+     WORLD_NAME="robotx_uav_course"
      TOTAL_WP=4 ;;
   2) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/course_2_search_field.sdf"
      COURSE_NAME="Course 2: Open Water Survey (Lawnmower)"
+     WORLD_NAME="course_2_search_field"
      TOTAL_WP=6 ;;
   3) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/course_3_dogleg.sdf"
      COURSE_NAME="Course 3: L-Shaped Dogleg"
+     WORLD_NAME="course_3_dogleg"
      TOTAL_WP=6 ;;
   *) echo "ERROR: --course must be 1, 2, or 3" >&2; exit 2 ;;
 esac
+# /world/<name>/stats is published by the Gazebo physics server itself;
+# stale image_bridge processes cannot fake it (unlike /drone/camera).
+GZ_READY_TOPIC="/world/${WORLD_NAME}/stats"
 
 # --------------------------------------------------------------------------- #
 # Run directory (auto-increments: run_1, run_2, ...)
@@ -138,10 +144,12 @@ cleanup() {
     eval pid="\${${pid_var}}"
     [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
   done
-  pkill -f "gz sim.*$(basename "$WORLD" .sdf)"    2>/dev/null || true
-  pkill -f "ros_gz_image image_bridge /drone"     2>/dev/null || true
-  pkill -f "arducopter.*-I0"                      2>/dev/null || true
-  pkill -f "gps_display.py"                       2>/dev/null || true
+  pkill -9 -f "gz sim"                            2>/dev/null || true
+  pkill -9 -f "gz-sim-server"                     2>/dev/null || true
+  pkill -9 -f "gz-sim-gui"                        2>/dev/null || true
+  pkill -9 -f "ros_gz_image image_bridge"         2>/dev/null || true
+  pkill -9 -f "arducopter.*-I0"                   2>/dev/null || true
+  pkill -9 -f "gps_display.py"                    2>/dev/null || true
 
   # Stamp run metadata into summary.json if it was written
   local sjson="${RUN_DIR}/summary.json"
@@ -182,20 +190,34 @@ PY
 trap cleanup INT TERM EXIT
 
 # --------------------------------------------------------------------------- #
-# Pre-flight: kill any stale simulation processes from a previous run.
-# A leftover gz instance will advertise /drone/camera immediately, making the
-# readiness check pass in <2 s while the NEW world hasn't loaded at all, and
-# SITL then fights the stale gz for the FDM port (UDP 9002).
+# Pre-flight: kill ALL stale simulation processes from previous runs.
+#
+# Critical: image_bridge subscribes to /drone/camera on the gz bus. Even with
+# no Gazebo server alive, a surviving bridge makes `gz topic -l` report
+# /drone/camera, causing the readiness check to pass in <2 s while the new
+# world hasn't loaded. Use SIGKILL (-9) and wait until /drone/camera actually
+# disappears before proceeding.
 # --------------------------------------------------------------------------- #
 pmsg "Pre-flight: clearing stale simulation processes..."
-pkill -f "gz sim"                           2>/dev/null || true
-pkill -f "arducopter"                       2>/dev/null || true
-pkill -f "mavproxy.py"                      2>/dev/null || true
-pkill -f "ros_gz_image image_bridge"        2>/dev/null || true
-pkill -f "accuracy_verify.py"               2>/dev/null || true
-pkill -f "camera_live_feed.py"              2>/dev/null || true
-pkill -f "gps_display.py"                   2>/dev/null || true
-sleep 2   # give processes time to die before we check topic list
+pkill -9 -f "gz sim"                        2>/dev/null || true
+pkill -9 -f "gz-sim-server"                 2>/dev/null || true
+pkill -9 -f "gz-sim-gui"                    2>/dev/null || true
+pkill -9 -f "arducopter"                    2>/dev/null || true
+pkill -9 -f "mavproxy.py"                   2>/dev/null || true
+pkill -9 -f "sim_vehicle.py"                2>/dev/null || true
+pkill -9 -f "ros_gz_image image_bridge"     2>/dev/null || true
+pkill -9 -f "accuracy_verify.py"            2>/dev/null || true
+pkill -9 -f "camera_live_feed.py"           2>/dev/null || true
+pkill -9 -f "gps_display.py"               2>/dev/null || true
+
+# Wait until the gz bus no longer sees /drone/camera (stale bridges gone)
+pmsg "      Waiting for stale gz topics to clear..."
+for _ in $(seq 1 15); do
+  gz topic -l 2>/dev/null | grep -q "/drone/camera" || break
+  sleep 1
+done
+# One extra second for sockets to fully release
+sleep 1
 
 # --------------------------------------------------------------------------- #
 # 1. Gazebo
@@ -210,11 +232,11 @@ else
 fi
 GZ_PID=$!
 
-pmsg "      Waiting for /drone/camera topic (world + ArduPilot plugin load ~30-60 s)..."
+pmsg "      Waiting for Gazebo physics server: ${GZ_READY_TOPIC} (30-90 s)..."
 GZ_START=$(date +%s)
 ready=0
 for _ in $(seq 1 120); do
-  if gz topic -l 2>/dev/null | grep -qx "/drone/camera"; then ready=1; break; fi
+  if gz topic -l 2>/dev/null | grep -qx "${GZ_READY_TOPIC}"; then ready=1; break; fi
   if ! kill -0 "$GZ_PID" 2>/dev/null; then
     echo "ERROR: Gazebo exited early (see $GZ_LOG)." >&2; exit 1
   fi
@@ -222,14 +244,9 @@ for _ in $(seq 1 120); do
 done
 GZ_ELAPSED=$(( $(date +%s) - GZ_START ))
 if [ "$ready" -eq 1 ]; then
-  pmsg "      Gazebo up in ${GZ_ELAPSED}s: /drone/camera publishing."
-  if [ "$GZ_ELAPSED" -lt 5 ]; then
-    pmsg "      WARN: Gazebo appeared ready in <5 s -- possible stale process survived."
-    pmsg "      Waiting an extra 10 s for fresh instance to stabilize..."
-    sleep 10
-  fi
+  pmsg "      Gazebo physics server up in ${GZ_ELAPSED}s."
 else
-  pmsg "      WARN: camera topic not seen after ${GZ_ELAPSED}s; continuing anyway."
+  pmsg "      WARN: ${GZ_READY_TOPIC} not seen after ${GZ_ELAPSED}s; continuing anyway."
 fi
 
 # --------------------------------------------------------------------------- #
