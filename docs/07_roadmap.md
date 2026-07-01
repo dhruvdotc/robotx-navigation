@@ -1,6 +1,6 @@
 # Roadmap & Progress Tracking
 
-Last updated: 2026-06-28
+Last updated: 2026-06-30
 
 ---
 
@@ -23,13 +23,14 @@ Goal: full end-to-end cycle (capture → annotate → train → deploy → test)
 - [x] Batch detection + metrics pipeline (`hsv_batch_detect.py`, `metrics_summary.py`, `visualize_results.py`)
 - [x] One-command field demo scripts (`fulldemo/`)
 - [x] Simulation accuracy report: 6/6 buoys detected, mean error 0.16 m, max 1.04 m (Course 1, 10 m AGL)
+- [x] CLAHE on V channel before HSV thresholding — `apply_clahe_to_v()` called unconditionally in `camera_live_feed.py` main loop (line 570)
 - [x] Documentation (`docs/`)
 
 ---
 
 ## In Progress 🔄
 
-- [ ] YOLO model training pipeline — need to document end-to-end train loop with `ultralytics`
+- [ ] YOLO model training pipeline — documentation written (`08_annotation_and_training.md`); code improvements pending (auto-validation, integrated train loop — see TODO #4)
 - [ ] `visualize_results.py` — currently has hard-coded stats from 6/26 run; needs to read from CSV dynamically
 
 ---
@@ -68,15 +69,14 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 
 ### 3. Preprocessing / standardizing filters
 
-**Problem:** no input normalization before detection. Different cameras, lighting angles, and exposure settings produce very different raw frames, making fixed HSV thresholds brittle.
+**Status:** CLAHE is already done (see Completed above). Remaining gaps:
 
-**Suggestions:**
-- CLAHE on the V channel before HSV thresholding (already implemented as `apply_clahe_to_v()` in `camera_live_feed.py` — wire it in by default)
+**Problem:** Different cameras, lighting angles, and exposure settings produce very different raw frames, making fixed HSV thresholds brittle.
+
+**Remaining suggestions:**
 - Auto white-balance normalization on each frame before HSV conversion
 - Optional exposure normalization: histogram stretching on V channel
 - Consider a standardization pass in `hsv_batch_detect.py` before the proposal step
-
-**Note:** `apply_clahe_to_v()` already exists in `camera_live_feed.py` (line 504) but is not called in the main detection loop. Easiest short-term win: add a `--clahe` flag to enable it.
 
 ---
 
@@ -103,7 +103,8 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 - [x] `05_simulation.md` — Gazebo SITL, 3 courses
 - [x] `06_real_flight.md` — Jetson + GCS full demo
 - [x] `07_roadmap.md` — this file
-- [ ] `08_training.md` — YOLO training pipeline (once #4 is done)
+- [x] `08_annotation_and_training.md` — YOLO annotation + training pipeline
+- [x] `09_competition_day.md` — competition day cheat sheet
 
 ---
 
@@ -114,19 +115,24 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 | Green HSV range: README says 75–99, code is 75–105 | `color_utils.py` line 21, `simulation/README.md` lines 230/244 | Fix README to say 75–105, or tighten code to 99 |
 | `visualize_results.py` has hard-coded stats | `visualize_results.py` top constants | Should read from `captures/hsv_results/detections.csv` dynamically |
 | No IMU attitude correction in GPS projection | `camera_live_feed.py` `project_pixel_to_ground_ned()` | Assumes perfect nadir; pitch/roll during flight adds lateral error |
-| `--fx-px` default (1500) diverges from calibration (1319) | `camera_live_feed.py` arg default | Always pass `--calibration` or fix default to match calibration JSON |
+| `--fx-px` default (1500) diverges from calibration (1319) | `camera_live_feed.py` arg default | Always pass `--calibration-file` flag; default is a fallback only |
+| **`run_detection_jetson.sh` passes flags that don't exist in `camera_live_feed.py`** | `fulldemo/run_detection_jetson.sh` + `camera_live_feed.py` | Flags `--yolo-model`, `--gcs-ip`, `--save-video`, `--drone-lat`, `--drone-lon`, `--heading-deg`, `--headless` are planned for YOLO integration (TODO #2). Script will crash until then. Run `camera_live_feed.py` directly. |
+| **`run_detection_jetson.sh` looks for `buoy_best.onnx`, not `.pt`** | `fulldemo/run_detection_jetson.sh` lines 11–19 | Export trained model with `model.export(format='onnx')` and copy as `buoy_best.onnx`; see `08_annotation_and_training.md` |
+| **`jetson_setup.sh` does not install `ultralytics`** | `jetson_setup.sh` | Install manually: `pip install ultralytics` in `.venv-mavlink` after setup |
 
 ---
 
 ## Competition day checklist
 
-- [ ] Collect 20+ raw images per color (red, green, blue) at actual venue lighting
-- [ ] Place reference crops in `captures/classes/{red,green,blue}/`
+- [ ] Collect 30–50 raw images per color (red, green, blue) at actual venue lighting
+- [ ] Place one reference crop per color (named exactly `red.jpg`, `green.jpg`, `blue.jpg`) in both `captures/classes/` (for live detector) and `yolo_comparison_test/path2_switch_proposal/captures/classes/` (for training)
 - [ ] Run `python augment_test.py` — check retention rate ≥ 70%
-- [ ] Run `python hsv_batch_detect.py` — verify per-class detections look correct in annotated images
-- [ ] Run `python metrics_summary.py` — zero false positives, zero missed images
-- [ ] Update `buoy_best.pt` on Jetson if a new model was trained
-- [ ] Run `bash simulation/run_course.sh --course 1` — verify sim still passes
-- [ ] Set correct `--altitude-m` (measure AGL at your planned flight height)
+- [ ] Run `python hsv_batch_detect.py` — verify per-class detections in annotated images
+- [ ] Run `python metrics_summary.py` — minimal false positives, minimal missed images
+- [ ] Train new model: `01_autolabel.py` → `02_finetune.py` → validation steps
+- [ ] Export ONNX and copy to Jetson as `buoy_best.onnx` (needed for `run_detection_jetson.sh` when TODO #2 is done)
+- [ ] Set correct `--altitude-m` for your planned flight height
 - [ ] Confirm network link (ping Jetson from Mac)
-- [ ] Test full pipeline end-to-end with `fulldemo/` scripts before competition
+- [ ] Start GCS: `bash fulldemo/run_gcs_mac.sh` — wait for `Listening UDP 14555`
+- [ ] Start detector on Jetson directly via `camera_live_feed.py` (see `09_competition_day.md`)
+- [ ] Verify `[GPS]` lines appear when camera points at buoy

@@ -116,9 +116,11 @@ cd ~/robotx-navigation
 bash jetson_setup.sh
 ```
 
-`jetson_setup.sh` installs: `opencv-python`, `numpy`, `pymavlink`, `ultralytics` (YOLO), and other deps via `pip3`.
+`jetson_setup.sh` installs: `python3-opencv` (from apt), `numpy`, `pymavlink`, `future`, and clones the MAVCore vendor library. It creates `.venv-mavlink` — activate it before running any Python scripts.
 
-Make sure `buoy_best.pt` is present at `~/robotx-navigation/buoy_best.pt` before running the detector.
+> **`ultralytics` is NOT installed by `jetson_setup.sh`** — it must be installed separately once the YOLO integration is ready (see TODO #2 in roadmap): `pip install ultralytics`.
+
+Make sure `captures/classes/` exists at `~/robotx-navigation/captures/classes/` with reference crops (`red.jpg`, `green.jpg`, `blue.jpg`) — `camera_live_feed.py` loads HSV ranges from this directory at startup.
 
 ### WiFi setup (field router)
 

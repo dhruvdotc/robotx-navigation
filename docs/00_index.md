@@ -15,6 +15,8 @@
 | [05_simulation.md](05_simulation.md) | Gazebo SITL — running all 3 courses |
 | [06_real_flight.md](06_real_flight.md) | Full demo: Jetson detection + Mac ground station |
 | [07_roadmap.md](07_roadmap.md) | Progress tracking + outstanding TODOs |
+| [08_annotation_and_training.md](08_annotation_and_training.md) | Auto-label → fine-tune YOLO → validate → deploy best.pt |
+| [09_competition_day.md](09_competition_day.md) | Competition day cheat sheet — full sequence start to finish |
 
 ---
 
@@ -31,8 +33,14 @@ bash simulation/run_course.sh --course 1 --visual # 4-window GUI
 # Mac — terminal 1
 bash fulldemo/run_gcs_mac.sh
 
-# Jetson — terminal 2
-GCS_IP=<MAC_IP> bash fulldemo/run_detection_jetson.sh
+# Jetson — terminal 2 (HSV-only; run directly until TODO #2 YOLO integration is done)
+source .venv-mavlink/bin/activate
+python3 camera_live_feed.py --no-display --camera-index 0 \
+  --altitude-m 10 --origin-lat <LAT> --origin-lon <LON> \
+  --log-dir ~/detection_logs
+
+# Future (once TODO #2 complete):
+# GCS_IP=<MAC_IP> bash fulldemo/run_detection_jetson.sh
 ```
 
 ### Data pipeline (after collecting images)

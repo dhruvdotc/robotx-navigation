@@ -70,7 +70,7 @@ Stored in `calibration/camera_intrinsics_latest.json`.
 
 **Calibration rig:** 11×8 checkerboard (10×7 inner corners), 1-inch (0.0254 m) squares, 40 frames.
 
-Pass `--calibration calibration/camera_intrinsics_latest.json` to enable undistortion.
+Pass `--calibration-file calibration/camera_intrinsics_latest.json` to enable undistortion.
 In Gazebo (ogre2), undistortion is skipped — the render engine ignores the `<distortion>` block and produces a clean pinhole image. All sim launchers already pass `--no-undistort`.
 
 ---
@@ -106,5 +106,5 @@ The dominant error source at 10 m AGL with fx≈1319 is altitude uncertainty (~1
 |--------|--------|-----------|
 | Altitude uncertainty (baro, not GPS) | ~1% per % error | Use GPS barometric altitude; fly consistent AGL |
 | Drone pitch/roll during flight | Lateral pixel shift at edges | Add IMU attitude correction (future work) |
-| Lens distortion (real camera) | Up to ~5 px at corners | Always pass `--calibration` on real hardware |
+| Lens distortion (real camera) | Up to ~5 px at corners | Always pass `--calibration-file` on real hardware |
 | Datum/origin error | Constant offset on all detections | Set datum from GPS fix at takeoff point |

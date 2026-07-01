@@ -104,7 +104,7 @@ When `captures/classes/` exists, `derive_class_hsv_ranges()` computes a median h
 
 ## Kalman tracking (`camera_live_feed.py` only)
 
-After each frame's detections, `update_tracks()` matches detections to existing tracks by nearest centroid within `--track-gate-px` (default: auto-scaled to expected diameter).
+After each frame's detections, `update_tracks()` matches detections to existing tracks by nearest centroid within `--track-gate-px` (default: 70.0 px).
 
 Each track has a `cv2.KalmanFilter` (constant-velocity, 4-state: x, y, dx, dy). Tracks that miss more than `--max-track-missed` consecutive frames are dropped.
 
@@ -116,12 +116,14 @@ Tracking reduces duplicate GPS reports for the same buoy across frames.
 
 | Flag | Default | Effect |
 |------|---------|--------|
-| `--altitude-m` | 10 | AGL altitude — scales expected buoy diameter |
+| `--altitude-m` | 10.0 | AGL altitude — scales expected buoy diameter |
 | `--target-diameter-m` | 0.32 | Expected buoy diameter in metres |
-| `--fx-px` | 1500 (default); calibration JSON overrides | Focal length |
-| `--min-circularity` | 0.2 (live feed) | Lower = accept more elongated shapes |
-| `--min-color-ratio` | 0.12 (live feed) | Lower = accept less colorful ROIs |
-| `--calibration` | `calibration/camera_intrinsics_latest.json` | Intrinsics JSON path |
+| `--fx-px` | None (reads calibration file) | Override focal length; last-resort fallback is 1500 if no calibration file exists |
+| `--min-circularity` | 0.35 | Lower = accept more elongated shapes |
+| `--min-color-ratio` | 0.12 | Lower = accept less colorful ROIs |
+| `--track-gate-px` | 70.0 | Max centroid distance (px) to match a detection to an existing track |
+| `--max-track-missed` | 8 | Drop a track after this many consecutive missed frames |
+| `--calibration-file` | `calibration/camera_intrinsics_latest.json` | Intrinsics JSON path |
 | `--no-undistort` | off | Skip lens undistortion (always use in Gazebo — ogre2 renders clean pinhole) |
 
 ---
@@ -144,4 +146,4 @@ A perfect-size, fully-saturated buoy scores ~1.0. The size term penalizes detect
 | Zero detections on real buoys | HSV ranges too tight for current lighting | Re-derive ranges with `captures/classes/`; lower `--sat-min-floor` or widen `--hue-margin` |
 | Dozens of false positives | Size gating too loose or altitude wrong | Check `--altitude-m` is correct; increase `--min-circularity` |
 | Detections flicker | Low color ratio acceptance | Raise `--min-color-ratio`; check `--track-gate-px` |
-| Green buoys detected as blue | Green range upper bound too low | Verify code uses 75–105; check `captures/classes/green/` crops |
+| Green buoys detected as blue | Green range upper bound too low | Verify code uses 75–105; re-derive with a fresh `captures/classes/green.jpg` crop |

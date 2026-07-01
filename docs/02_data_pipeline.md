@@ -11,9 +11,9 @@ This is the loop to run every time you collect new images at a field session or 
 captures/
 ├── *.jpg                      # raw captured frames (flat, no subdirs)
 ├── classes/
-│   ├── red/   *.jpg           # one or more reference crops of red buoys
-│   ├── green/ *.jpg           # reference crops of green buoys
-│   └── blue/  *.jpg           # reference crops of blue buoys
+│   ├── red.jpg                # one reference crop of a red buoy (exact filename)
+│   ├── green.jpg              # one reference crop of a green buoy
+│   └── blue.jpg               # one reference crop of a blue buoy
 └── hsv_results/
     ├── detections.csv         # output: per-detection rows
     ├── annotated/             # output: annotated JPGs per input frame
@@ -40,12 +40,14 @@ Hotkeys: `Space` saves a frame, `q` quits.
 
 ### Organize class references
 
-After capturing, hand-pick 2–5 tight crops of each buoy color and drop them into:
-- `captures/classes/red/`
-- `captures/classes/green/`
-- `captures/classes/blue/`
+After capturing, hand-pick **one tight, well-lit crop per color** and save them as:
+- `captures/classes/red.jpg`
+- `captures/classes/green.jpg`
+- `captures/classes/blue.jpg`
 
-These are used by `hsv_batch_detect.py` and `color_utils.derive_class_hsv_ranges()` to automatically derive HSV ranges for that day's lighting. If `captures/classes/` is empty or missing, the scripts fall back to the hard-coded fallback ranges in `color_utils.py`.
+The filename stem must be exactly `red`, `green`, or `blue` — `color_utils.derive_class_hsv_ranges()` reads the color name from the filename. Other filenames in `classes/` are silently ignored.
+
+These are used by `hsv_batch_detect.py` and `camera_live_feed.py` to automatically derive HSV ranges for that day's lighting. If `captures/classes/` is empty or missing, the scripts fall back to the hard-coded fallback ranges in `color_utils.py`.
 
 ---
 
