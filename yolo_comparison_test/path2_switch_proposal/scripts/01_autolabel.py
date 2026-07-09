@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
-"""Path 2A: auto-label images with isolated HSV logic."""
+"""Path 2A: auto-label images with isolated HSV logic.
+
+Usage
+-----
+    # Default: reads from ../captures (raw images)
+    python 01_autolabel.py
+
+    # After running 00_preprocess_training_data.py:
+    python 01_autolabel.py --captures-dir ../preprocessed_captures
+"""
 
 from __future__ import annotations
 
+import argparse
 import os
 import shutil
 from dataclasses import dataclass
@@ -130,7 +140,23 @@ def detect_in_image(img: np.ndarray, ranges_map: dict[str, list[HSVRange]], min_
 def main() -> int:
     root = os.path.dirname(__file__)
     repo_root = os.path.join(root, "..")
-    captures_dir = os.path.join(repo_root, "captures")
+
+    parser = argparse.ArgumentParser(
+        description="Auto-label images with HSV detection → YOLO .txt format."
+    )
+    parser.add_argument(
+        "--captures-dir",
+        default=os.path.join(repo_root, "captures"),
+        metavar="DIR",
+        help=(
+            "Directory containing raw (or pre-processed) training images. "
+            "Pass ../preprocessed_captures after running 00_preprocess_training_data.py. "
+            "(default: ../captures)"
+        ),
+    )
+    args = parser.parse_args()
+
+    captures_dir = os.path.abspath(args.captures_dir)
     classes_dir = os.path.join(captures_dir, "classes")
 
     dataset_dir = os.path.join(root, "path2_dataset")

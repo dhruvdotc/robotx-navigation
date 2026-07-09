@@ -1,3 +1,4 @@
 ultralytics
 numpy
 opencv-python
+albumentations>=1.3
