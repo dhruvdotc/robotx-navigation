@@ -1,6 +1,6 @@
 # robotx-navigation
 
-CSE145/237D Spring 2026 - RobotX UAV buoy detection. HSV color pipeline on a Jetson, GPS projection from a nadir camera, MAVLink telemetry to a Mac ground station, and a full Gazebo SITL simulation stack.
+RobotX UAV buoy detection. HSV color pipeline on a Jetson, GPS projection from a nadir camera, MAVLink telemetry to a Mac ground station, and a full Gazebo SITL simulation stack.
 
 Detection classes: `red`, `green` (teal/cyan physical balloon), `blue`.
 
@@ -54,7 +54,7 @@ Key flags:
 |------|---------|--------------|
 | `--camera-index` | 0 | OpenCV camera index |
 | `--altitude-m` | 10 | Assumed AGL altitude for GPS projection |
-| `--fx-px` | 1500 | Focal length in pixels (match your lens) |
+| `--fx-px` | None (uses `--calibration-file`) | Override focal length in pixels; only needed if not using calibration |
 | `--target-diameter-m` | 0.32 | Expected buoy diameter for size gating |
 | `--det-width` / `--det-height` | 1920x1080 | Detection resolution |
 | `--no-display` | off | Headless mode (no OpenCV window) |
@@ -88,10 +88,10 @@ A full ArduPilot-SITL simulation of the RobotX navigation course with animated o
 **Two ways to run any of the 3 courses:**
 
 ```bash
-# Headless — terminal progress updates (no windows)
+# Headless - terminal progress updates (no windows)
 bash simulation/run_course.sh --course 1   # or 2 or 3
 
-# Visual — Gazebo 3D view + SITL console + camera detector + live GPS coords
+# Visual - Gazebo 3D view + SITL console + camera detector + live GPS coords
 bash simulation/run_course.sh --course 1 --visual
 ```
 

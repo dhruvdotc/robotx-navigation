@@ -81,8 +81,13 @@ def derive_class_hsv_ranges(classes_dir: str, hue_margin: int, sat_floor: int, v
             valid = np.ones_like(h, dtype=bool)
 
         hue_center = circular_hue_mean(h[valid])
-        s_min = max(sat_floor, int(np.percentile(s[valid], 15)))
-        v_min = max(val_floor, int(np.percentile(v[valid], 15)))
+        # Use the caller's floor directly, not max(floor, crop's own 15th
+        # percentile) -- see 01_autolabel.py's derive_class_hsv_ranges for
+        # why: a near-solid reference crop's own percentile is fragile to
+        # any real-world gap (compression, lighting, colour normalisation)
+        # between the crop and actual in-scene renderings.
+        s_min = sat_floor
+        v_min = val_floor
         out[color] = make_ranges_for_hue(hue_center, hue_margin, s_min, v_min)
 
     return out
@@ -121,6 +126,68 @@ def _print_tuple_ranges(title: str, ranges_map: dict[str, list[tuple[tuple[int, 
     for color in ("red", "green", "blue"):
         for i, (low, high) in enumerate(ranges_map.get(color, [])):
             print(f"  {color}[{i}] low={low} high={high}")
+
+
+# ---------------------------------------------------------------------------
+# Phase-2 colour normalisation (mirrors yolo_comparison_test/path2_switch_proposal/
+# scripts/00_preprocess_training_data.py exactly -- the YOLO fine-tune's training
+# images were run through this same pipeline, so inference must match it too).
+# ---------------------------------------------------------------------------
+NORM_CLAHE_CLIP = 2.0
+NORM_CLAHE_TILE = (8, 8)
+NORM_UNSHARP_SIGMA = 1.0
+NORM_UNSHARP_STRENGTH = 0.8
+
+
+def clahe_yuv(img_bgr: np.ndarray) -> np.ndarray:
+    """CLAHE on the Y (luma) channel in YUV colour space."""
+    yuv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2YUV)
+    clahe = cv2.createCLAHE(clipLimit=NORM_CLAHE_CLIP, tileGridSize=NORM_CLAHE_TILE)
+    yuv[:, :, 0] = clahe.apply(yuv[:, :, 0])
+    return cv2.cvtColor(yuv, cv2.COLOR_YUV2BGR)
+
+
+def gray_world_wb(img_bgr: np.ndarray) -> np.ndarray:
+    """Gray-World white balance: scale channels so their means match."""
+    img_f = img_bgr.astype(np.float64)
+    b_mean = img_f[:, :, 0].mean()
+    g_mean = img_f[:, :, 1].mean()
+    r_mean = img_f[:, :, 2].mean()
+    gray_mean = (b_mean + g_mean + r_mean) / 3.0
+
+    if b_mean > 1e-6:
+        img_f[:, :, 0] *= gray_mean / b_mean
+    if g_mean > 1e-6:
+        img_f[:, :, 1] *= gray_mean / g_mean
+    if r_mean > 1e-6:
+        img_f[:, :, 2] *= gray_mean / r_mean
+
+    return np.clip(img_f, 0, 255).astype(np.uint8)
+
+
+def unsharp_mask(
+    img_bgr: np.ndarray,
+    sigma: float = NORM_UNSHARP_SIGMA,
+    strength: float = NORM_UNSHARP_STRENGTH,
+) -> np.ndarray:
+    """Unsharp masking: blend a high-frequency detail residual back in."""
+    blurred = cv2.GaussianBlur(img_bgr, (0, 0), sigma)
+    sharpened = cv2.addWeighted(img_bgr, 1.0 + strength, blurred, -strength, 0)
+    return np.clip(sharpened, 0, 255).astype(np.uint8)
+
+
+def color_normalize(img_bgr: np.ndarray) -> np.ndarray:
+    """Full Phase-2 pipeline: CLAHE (YUV) -> Gray-World WB -> Unsharp Masking.
+
+    Apply this to a frame before handing it to a YOLO model fine-tuned via
+    00_preprocess_training_data.py's default (non---skip-normalize) path --
+    otherwise inference sees a different colour/contrast distribution than
+    training did.
+    """
+    img = clahe_yuv(img_bgr)
+    img = gray_world_wb(img)
+    img = unsharp_mask(img)
+    return img
 
 
 def load_color_ranges(

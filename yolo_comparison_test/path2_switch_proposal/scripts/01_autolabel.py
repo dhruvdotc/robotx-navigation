@@ -83,8 +83,18 @@ def derive_class_hsv_ranges(classes_dir: str, hue_margin: int, sat_floor: int, v
         if int(valid.sum()) < 10:
             valid = np.ones_like(h, dtype=bool)
         hue_center = circular_hue_mean(h[valid])
-        s_min = max(sat_floor, int(np.percentile(s[valid], 15)))
-        v_min = max(val_floor, int(np.percentile(v[valid], 15)))
+        # Use the caller's floor directly, not max(floor, crop's own 15th
+        # percentile). A reference crop that is almost entirely one
+        # saturated colour has a very high, narrow percentile (e.g. sat=246
+        # from a near-solid blue swatch); using that as a hard floor makes
+        # the derived range brittle to ANY real-world gap between the crop
+        # and actual in-scene renderings (compression, lighting, or -
+        # concretely observed here - colour normalisation shifting a real
+        # dark-blue in-scene object's saturation/value below the crop's own
+        # near-maximal level, dropping detections from 174 to 6 boxes across
+        # the dataset even though the object was genuinely present).
+        s_min = sat_floor
+        v_min = val_floor
         out[color] = make_ranges_for_hue(hue_center, hue_margin, s_min, v_min)
     return out
 
@@ -137,41 +147,17 @@ def detect_in_image(img: np.ndarray, ranges_map: dict[str, list[HSVRange]], min_
     return detections
 
 
-def main() -> int:
-    root = os.path.dirname(__file__)
-    repo_root = os.path.join(root, "..")
-
-    parser = argparse.ArgumentParser(
-        description="Auto-label images with HSV detection → YOLO .txt format."
-    )
-    parser.add_argument(
-        "--captures-dir",
-        default=os.path.join(repo_root, "captures"),
-        metavar="DIR",
-        help=(
-            "Directory containing raw (or pre-processed) training images. "
-            "Pass ../preprocessed_captures after running 00_preprocess_training_data.py. "
-            "(default: ../captures)"
-        ),
-    )
-    args = parser.parse_args()
-
-    captures_dir = os.path.abspath(args.captures_dir)
-    classes_dir = os.path.join(captures_dir, "classes")
-
-    dataset_dir = os.path.join(root, "path2_dataset")
-    images_dir = os.path.join(dataset_dir, "images")
-    labels_dir = os.path.join(dataset_dir, "labels")
+def label_subset(
+    images: list[str],
+    images_dir: str,
+    labels_dir: str,
+    ranges_map: dict[str, list[HSVRange]],
+    class_to_id: dict[str, int],
+) -> tuple[int, int, dict[str, int]]:
+    """Copy *images* into *images_dir* and write one YOLO .txt per image into
+    *labels_dir*. Returns (labeled_images, total_boxes, per_class_counts)."""
     os.makedirs(images_dir, exist_ok=True)
     os.makedirs(labels_dir, exist_ok=True)
-
-    ranges_map = derive_class_hsv_ranges(classes_dir, hue_margin=12, sat_floor=50, val_floor=45)
-    if not ranges_map:
-        print("Failed to derive class HSV ranges from captures/classes.")
-        return 1
-
-    class_to_id = {"red": 0, "green": 1, "blue": 2}
-    images = [p for p in list_images(captures_dir, exts=(".jpg",)) if os.path.dirname(p) == captures_dir]
 
     total_boxes = 0
     per_class = {"red": 0, "green": 0, "blue": 0}
@@ -209,24 +195,106 @@ def main() -> int:
                 f.write("\n")
         labeled_images += 1
 
+    return labeled_images, total_boxes, per_class
+
+
+def main() -> int:
+    root = os.path.dirname(__file__)
+    repo_root = os.path.join(root, "..")
+
+    parser = argparse.ArgumentParser(
+        description="Auto-label images with HSV detection → YOLO .txt format."
+    )
+    parser.add_argument(
+        "--captures-dir",
+        default=os.path.join(repo_root, "captures"),
+        metavar="DIR",
+        help=(
+            "Directory containing raw (or pre-processed) training images. "
+            "Pass ../preprocessed_captures after running 00_preprocess_training_data.py. "
+            "(default: ../captures)"
+        ),
+    )
+    args = parser.parse_args()
+
+    captures_dir = os.path.abspath(args.captures_dir)
+    classes_dir = os.path.join(captures_dir, "classes")
+    dataset_dir = os.path.join(root, "path2_dataset")
+
+    ranges_map = derive_class_hsv_ranges(classes_dir, hue_margin=12, sat_floor=50, val_floor=45)
+    if not ranges_map:
+        print("Failed to derive class HSV ranges from captures/classes.")
+        return 1
+
+    class_to_id = {"red": 0, "green": 1, "blue": 2}
+
+    # 00_preprocess_training_data.py emits train/ and val/ subdirs (raw-level
+    # split, leak-proof). Preserve that structure verbatim: label each side
+    # into images/{train,val} + labels/{train,val} and point dataset.yaml at
+    # the real split so downstream training gets honest validation for free.
+    train_src = os.path.join(captures_dir, "train")
+    val_src = os.path.join(captures_dir, "val")
+    split_mode = os.path.isdir(train_src) and os.path.isdir(val_src)
+
+    summary_lines: list[str] = []
+    if split_mode:
+        totals = {"red": 0, "green": 0, "blue": 0}
+        n_images = 0
+        n_boxes = 0
+        for subset, src in (("train", train_src), ("val", val_src)):
+            images = [p for p in list_images(src, exts=(".jpg",)) if os.path.dirname(p) == src]
+            imgs, boxes, per_class = label_subset(
+                images,
+                os.path.join(dataset_dir, "images", subset),
+                os.path.join(dataset_dir, "labels", subset),
+                ranges_map, class_to_id,
+            )
+            n_images += imgs
+            n_boxes += boxes
+            for k in totals:
+                totals[k] += per_class[k]
+            summary_lines.append(
+                f"[{subset}] {imgs} images, {boxes} boxes "
+                f"(red={per_class['red']}, green={per_class['green']}, blue={per_class['blue']})"
+            )
+        summary_lines.insert(0, f"Auto-labeled {n_images} images, {n_boxes} total bounding boxes")
+        summary_lines.append(
+            f"Per class: red={totals['red']}, green={totals['green']}, blue={totals['blue']}"
+        )
+        train_rel, val_rel = "images/train", "images/val"
+    else:
+        # Legacy flat layout. Fine for labeling, but anything that later
+        # re-splits these images must NOT be trusted for held-out metrics:
+        # augmented variants of one original may straddle that split.
+        print("[WARN] Flat captures dir (no train/ + val/ subdirs). Labeling as a "
+              "single pool; run 00_preprocess_training_data.py for a leak-proof split.")
+        images = [p for p in list_images(captures_dir, exts=(".jpg",)) if os.path.dirname(p) == captures_dir]
+        imgs, boxes, per_class = label_subset(
+            images,
+            os.path.join(dataset_dir, "images"),
+            os.path.join(dataset_dir, "labels"),
+            ranges_map, class_to_id,
+        )
+        summary_lines = [
+            f"Auto-labeled {imgs} images, {boxes} total bounding boxes",
+            f"Per class: red={per_class['red']}, green={per_class['green']}, blue={per_class['blue']}",
+        ]
+        train_rel = val_rel = "images"
+
     yaml_path = os.path.join(dataset_dir, "dataset.yaml")
     with open(yaml_path, "w", encoding="utf-8") as f:
         f.write("path: ./path2_dataset\n")
-        f.write("train: images\n")
-        f.write("val: images\n")
+        f.write(f"train: {train_rel}\n")
+        f.write(f"val: {val_rel}\n")
         f.write("nc: 3\n")
         f.write("names: ['red', 'green', 'blue']\n")
 
-    lines = [
-        f"Auto-labeled {labeled_images} images, {total_boxes} total bounding boxes",
-        f"Per class: red={per_class['red']}, green={per_class['green']}, blue={per_class['blue']}",
-    ]
-    for line in lines:
+    for line in summary_lines:
         print(line)
 
     summary_path = os.path.join(dataset_dir, "autolabel_summary.txt")
     with open(summary_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+        f.write("\n".join(summary_lines) + "\n")
     return 0
 
 

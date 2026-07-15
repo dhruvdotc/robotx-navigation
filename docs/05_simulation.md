@@ -7,12 +7,12 @@ Gazebo Harmonic SITL with ArduCopter, animated VRX ocean, and the real `camera_l
 ## Quick start
 
 ```bash
-# Headless — terminal progress only
+# Headless - terminal progress only
 bash simulation/run_course.sh --course 1   # straight channel  ~60 s
-bash simulation/run_course.sh --course 2   # lawnmower survey  ~3 min
+bash simulation/run_course.sh --course 2   # lawnmower survey  ~5 min
 bash simulation/run_course.sh --course 3   # L-shaped dogleg   ~90 s
 
-# Visual — 4 windows: Gazebo 3D, SITL console, camera detector, GPS coords
+# Visual - 4 windows: Gazebo 3D, SITL console, camera detector, GPS coords
 bash simulation/run_course.sh --course 1 --visual
 ```
 
@@ -22,7 +22,7 @@ All outputs auto-save to `simulation/sim_tests/run_N/` on completion.
 
 ## The three courses
 
-### Course 1 — Straight Navigation Channel
+### Course 1 - Straight Navigation Channel
 **World:** `simulation/gazebo/worlds/robotx_uav_course.sdf`
 **Inspired by:** RobotX 2026 "Safe Passage" (Task 1)
 
@@ -36,16 +36,16 @@ Three red/green gate pairs along a straight East axis, plus a scan-the-code ligh
 | gate2_red | 25 | −1.25 | red |
 | gate3_green | 40 | +1.25 | green |
 | gate3_red | 40 | −1.25 | red |
-| light_buoy | 50 | 0 | — |
+| light_buoy | 50 | 0 | - |
 
 Flight: straight East at N=0, 4 s hover per gate.
 
-### Course 2 — Open Water Survey (Lawnmower)
+### Course 2 - Open Water Survey (Lawnmower)
 **World:** `simulation/gazebo/worlds/course_2_search_field.sdf`
 
-Seven buoys scattered across a 60×30 m open field. Drone runs three East-West strips (lawnmower). Tests detection without predictable layout.
+Seven buoys scattered across a 60×30 m open field. Drone runs five East-West strips (lawnmower, N=-12/-6/0/+6/+12 - tight enough to respect the camera's narrower vertical FOV on these fixed-heading legs). Tests detection without predictable layout.
 
-### Course 3 — L-Shaped Dogleg
+### Course 3 - L-Shaped Dogleg
 **World:** `simulation/gazebo/worlds/course_3_dogleg.sdf`
 **Inspired by:** RobotX 2026 "Gymkhana"
 
@@ -75,10 +75,27 @@ All three courses include ~11 floating debris objects designed to stress-test th
 |------|-------|---------------|
 | Olive-green panels | Flat box ~0.8×0.5×0.1 m | Hue ~60–70, just below green range |
 | Orange-brown crates | Box ~0.5×0.5×0.4 m | Hue ~15–25, bleeds into red at low sat |
-| Gray barrels | Cylinder r=0.15–0.2 m | Neutral — tests shape filtering |
-| Gray flat panels | Flat box ~0.9×0.6×0.1 m | Neutral — tests size gating |
+| Gray barrels | Cylinder r=0.15–0.2 m | Neutral - tests shape filtering |
+| Gray flat panels | Flat box ~0.9×0.6×0.1 m | Neutral - tests size gating |
 
 Distractors have **no emissive material** (unlike real buoys), so they appear duller from nadir and should be suppressed by confidence thresholding + size gating.
+
+---
+
+## Scan-the-Code light buoy (color cycling)
+
+Every course's `light_buoy` now cycles red -> green -> blue every 3 seconds,
+matching the real Scan the Code task. `run_course.sh` launches
+`simulation/light_buoy_cycler.py` automatically; it spawns/swaps an emissive
+glow-panel model on the buoy top per phase (entity swap because gz-sim
+Harmonic's `visual_config` material changes never reach the sensor render
+scene; see the cycler docstring for the full story). Transitions log to
+`sim_tests/run_N/light_cycler.log`. To collect blue training data, loiter
+over the buoy the way the real task requires: `run_course.sh --course 1
+--no-fly`, then `fly_course.py --gates '0:50' --hover-s 100` plus a
+`camera_live_feed.py --ros-topic /drone/camera` capture. This is how the
+blue class in `yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/`
+was trained.
 
 ---
 

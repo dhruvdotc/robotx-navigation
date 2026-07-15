@@ -6,7 +6,7 @@ Frame sources: live USB camera (default), a single video file
 
 Pixel detections are projected to a local ground frame (NED metres) and an
 absolute GPS coordinate using the camera intrinsics. Intrinsics are resolved
-with the precedence:  CLI override  >  calibration file  >  legacy 1500 fallback.
+with the precedence:  CLI override  >  calibration file  >  legacy fallback.
 """
 
 import argparse
@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
-from color_utils import build_mask, load_color_ranges
+from color_utils import build_mask, color_normalize, load_color_ranges
 
 
 @dataclass
@@ -65,7 +65,12 @@ COLOR_DRAW = {
 }
 
 DEFAULT_CALIBRATION = "calibration/camera_intrinsics_latest.json"
-LEGACY_FOCAL_PX = 1500.0
+# Fallback focal lengths, only used if both the calibration file fails to load
+# AND no --fx-px/--fy-px override is given. Matches the measured checkerboard
+# calibration (calibration/camera_intrinsics_latest.json) instead of a guess,
+# so this worst-case path is still close to correct.
+LEGACY_FX_PX = 1319.071398
+LEGACY_FY_PX = 1407.4984
 
 
 def make_kalman(init_x: float, init_y: float) -> cv2.KalmanFilter:
@@ -107,7 +112,7 @@ def load_calibration(path: str) -> dict | None:
 def resolve_intrinsics(
     args: argparse.Namespace, calib: dict | None, width: int, height: int
 ) -> Intrinsics:
-    """Apply precedence CLI override > calibration file > legacy 1500 fallback.
+    """Apply precedence CLI override > calibration file > legacy fallback.
 
     Any explicit CLI intrinsic (--fx-px/--fy-px/--cx-px/--cy-px) switches to
     manual mode: the calibration file (including its distortion model) is
@@ -117,8 +122,8 @@ def resolve_intrinsics(
     manual = any(v is not None for v in cli_keys)
 
     if manual:
-        fx = args.fx_px if args.fx_px is not None else LEGACY_FOCAL_PX
-        fy = args.fy_px if args.fy_px is not None else LEGACY_FOCAL_PX
+        fx = args.fx_px if args.fx_px is not None else LEGACY_FX_PX
+        fy = args.fy_px if args.fy_px is not None else LEGACY_FY_PX
         cx = args.cx_px if args.cx_px is not None else width / 2.0
         cy = args.cy_px if args.cy_px is not None else height / 2.0
         dist = np.zeros(5, dtype=np.float64)
@@ -134,32 +139,47 @@ def resolve_intrinsics(
             dist = np.zeros(5, dtype=np.float64)
             source = "calibration-file(no-undistort)"
     else:
-        fx = fy = LEGACY_FOCAL_PX
+        fx, fy = LEGACY_FX_PX, LEGACY_FY_PX
         cx = width / 2.0
         cy = height / 2.0
         dist = np.zeros(5, dtype=np.float64)
-        source = "legacy-1500"
+        source = "legacy-calibration-fallback"
 
     K = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]], dtype=np.float64)
     return Intrinsics(fx=fx, fy=fy, cx=cx, cy=cy, dist=dist, K=K, source=source)
 
 
 def project_pixel_to_ground_ned(
-    px: float, py: float, intr: Intrinsics, altitude_m: float
+    px: float, py: float, intr: Intrinsics, altitude_m: float, heading_deg: float = 0.0
 ) -> tuple[float, float]:
     """Project a full-frame pixel to a ground point in local NED metres.
 
     Assumes a nadir-pointing (straight-down) camera at ``altitude_m`` above a
-    flat ground plane, with image +x -> East, image +y -> South, no yaw.
-    cv2.undistortPoints removes the Brown-Conrady lens distortion and returns
-    normalised image coordinates, which scale by altitude to ground offsets.
+    flat ground plane, rigidly mounted to the airframe. At ``heading_deg=0``
+    (the default, and what the sim always flies with WP_YAW_BEHAVIOR=0):
+    image +x -> East, image +y -> South. cv2.undistortPoints removes the
+    Brown-Conrady lens distortion and returns normalised image coordinates,
+    which scale by altitude to body-relative ground offsets.
+
+    ``heading_deg`` (compass bearing, clockwise from North, matching MAVLink
+    yaw) rotates that body-relative offset into true North/East, since a real
+    drone doesn't fly yaw-locked like the sim does: image-up is the airframe's
+    nose direction (heading), not always geographic North. This still assumes
+    perfect nadir (no pitch/roll) -- see docs/07_roadmap.md known bugs.
     """
     pts = np.array([[[float(px), float(py)]]], dtype=np.float64)
     undistorted = cv2.undistortPoints(pts, intr.K, intr.dist)
     x_n = float(undistorted[0, 0, 0])
     y_n = float(undistorted[0, 0, 1])
-    north = -y_n * altitude_m
-    east = x_n * altitude_m
+    forward_m = -y_n * altitude_m  # body-relative: along the nose direction
+    right_m = x_n * altitude_m  # body-relative: to the right of the nose
+
+    if heading_deg == 0.0:
+        return forward_m, right_m  # north, east (unchanged from before)
+
+    theta = math.radians(heading_deg)
+    north = forward_m * math.cos(theta) - right_m * math.sin(theta)
+    east = forward_m * math.sin(theta) + right_m * math.cos(theta)
     return north, east
 
 
@@ -209,28 +229,50 @@ def find_working_camera(max_index: int, width: int, height: int) -> int | None:
 def ros_frame_source(topic: str):
     """Yield (frame_bgr, topic) tuples from a live ROS 2 sensor_msgs/Image topic.
 
-    rclpy/cv_bridge are imported lazily here so the script still runs under the
-    project .venv (which has no ROS) for camera/video/image-dir sources; only
+    rclpy is imported lazily here so the script still runs under the project
+    .venv (which has no ROS) for camera/video/image-dir sources; only
     --ros-topic requires a sourced ROS 2 environment (system python).
+
+    Image decoding is done manually with numpy instead of cv_bridge: the sim
+    camera publishes plain rgb8/bgr8, which is a frombuffer+reshape, and
+    cv_bridge's compiled cvtColor2 hard-crashes ("_ARRAY_API not found") when
+    a pip NumPy 2.x shadows the NumPy 1.x it was built against - an ABI trap
+    this repo hit in practice once torch/ultralytics pulled in NumPy 2.
     """
     try:
         import rclpy
-        from cv_bridge import CvBridge
         from sensor_msgs.msg import Image
     except ImportError as exc:
         print(
-            f"[ERROR] --ros-topic needs rclpy + cv_bridge; run under a sourced ROS 2 "
+            f"[ERROR] --ros-topic needs rclpy; run under a sourced ROS 2 "
             f"environment (e.g. `source /opt/ros/humble/setup.bash`). Import failed: {exc}"
         )
         return
 
-    bridge = CvBridge()
     state = {"frame": None, "seq": 0}
+
+    def _decode(msg) -> np.ndarray | None:
+        if msg.encoding not in ("rgb8", "bgr8"):
+            print(f"[WARN] Unsupported image encoding '{msg.encoding}' "
+                  f"(expected rgb8/bgr8); frame dropped.")
+            return None
+        buf = np.frombuffer(msg.data, dtype=np.uint8)
+        expected = msg.height * msg.step
+        if buf.size < expected:
+            return None
+        # Respect row stride (step may exceed width*3 with padding), then crop.
+        img = buf[:expected].reshape(msg.height, msg.step)[:, : msg.width * 3]
+        img = img.reshape(msg.height, msg.width, 3)
+        if msg.encoding == "rgb8":
+            img = img[:, :, ::-1]  # RGB -> BGR for OpenCV
+        return np.ascontiguousarray(img)
 
     def _cb(msg):
         try:
-            state["frame"] = bridge.imgmsg_to_cv2(msg, "bgr8")
-            state["seq"] += 1
+            frame = _decode(msg)
+            if frame is not None:
+                state["frame"] = frame
+                state["seq"] += 1
         except Exception as exc:  # noqa: BLE001 - keep streaming on a bad frame
             print(f"[WARN] Failed to convert ROS image: {exc}")
 
@@ -332,27 +374,65 @@ def parse_args() -> argparse.Namespace:
         help="Read frames live from a ROS 2 sensor_msgs/Image topic (needs a sourced ROS env), "
         "e.g. --ros-topic /drone/camera.",
     )
-    parser.add_argument("--no-display", action="store_true", help="Disable the OpenCV preview window.")
+    parser.add_argument(
+        "--no-display", "--headless", dest="no_display", action="store_true",
+        help="Disable the OpenCV preview window (alias: --headless).",
+    )
     parser.add_argument("--width", type=int, default=1920)
     parser.add_argument("--height", type=int, default=1080)
     parser.add_argument("--det-width", type=int, default=960)
     parser.add_argument("--det-height", type=int, default=540)
     parser.add_argument("--altitude-m", type=float, default=10.0)
-    # Intrinsics: CLI override > calibration file > legacy 1500 fallback.
+    parser.add_argument(
+        "--heading-deg", type=float, default=0.0,
+        help="Drone compass heading in degrees, clockwise from North (MAVLink yaw convention). "
+        "Rotates the pixel->NED projection accordingly; default 0 matches the sim, which always "
+        "flies yaw-locked (WP_YAW_BEHAVIOR=0).",
+    )
+    # Intrinsics: CLI override > calibration file > legacy fallback (LEGACY_FX_PX/LEGACY_FY_PX).
     parser.add_argument("--fx-px", type=float, default=None)
     parser.add_argument("--fy-px", type=float, default=None)
     parser.add_argument("--cx-px", type=float, default=None)
     parser.add_argument("--cy-px", type=float, default=None)
     parser.add_argument("--calibration-file", type=str, default=DEFAULT_CALIBRATION)
     parser.add_argument("--no-undistort", action="store_true", help="Skip lens distortion correction.")
-    parser.add_argument("--origin-lat", type=float, default=0.0, help="Origin latitude for NED->GPS.")
-    parser.add_argument("--origin-lon", type=float, default=0.0, help="Origin longitude for NED->GPS.")
+    parser.add_argument(
+        "--origin-lat", "--drone-lat", dest="origin_lat", type=float, default=0.0,
+        help="Origin/drone latitude for NED->GPS (alias: --drone-lat).",
+    )
+    parser.add_argument(
+        "--origin-lon", "--drone-lon", dest="origin_lon", type=float, default=0.0,
+        help="Origin/drone longitude for NED->GPS (alias: --drone-lon).",
+    )
+    parser.add_argument(
+        "--connect", type=str, default=None,
+        help="MAVLink endpoint (e.g. udp:127.0.0.1:14554) for LIVE drone position. When set, "
+        "--origin-lat/--origin-lon are treated as the datum/home position and the drone's live "
+        "NED offset from it is added to every detection before GPS conversion, so the reported "
+        "position tracks a moving drone instead of assuming it never left --origin-lat/--origin-lon. "
+        "Omit to keep the previous static-origin behaviour (fine for a stationary test).",
+    )
     parser.add_argument("--target-diameter-m", type=float, default=0.32)
     parser.add_argument("--kernel-size", type=int, default=5)
     parser.add_argument("--roi-margin", type=float, default=0.10)
     parser.add_argument("--min-circularity", type=float, default=0.35)
     parser.add_argument("--min-color-ratio", type=float, default=0.12)
     parser.add_argument("--track-gate-px", type=float, default=70.0)
+    parser.add_argument(
+        "--yolo-model", type=str, default=None,
+        help="Path to a YOLO .pt/.onnx model (see docs/08_annotation_and_training.md). When set, "
+        "detection uses this model instead of the two-stage HSV pipeline.",
+    )
+    parser.add_argument("--yolo-conf", type=float, default=0.25, help="YOLO confidence threshold.")
+    parser.add_argument(
+        "--save-video", action="store_true",
+        help="Also write annotated frames to an mp4 in --log-dir (works headless too).",
+    )
+    parser.add_argument(
+        "--gcs-ip", type=str, default=None,
+        help="Ground station IP. When set, transmit confirmed detections as MAVLink STATUSTEXT "
+        "buoy reports (see mavlink_comms/) to udpout:<ip>:14555.",
+    )
     parser.add_argument("--max-track-missed", type=int, default=8)
     parser.add_argument("--log-dir", type=str, default="detection_logs")
     parser.add_argument("--calib-color", type=str, default="red", choices=["red", "green", "blue"])
@@ -460,6 +540,71 @@ def find_detections(
     return detections
 
 
+def load_yolo_model(model_path: str):
+    """Load a YOLO .pt/.onnx model (Path 2 fine-tune; see
+    docs/08_annotation_and_training.md). Lazily imported so the HSV-only path
+    still runs without `ultralytics` installed.
+    """
+    try:
+        from ultralytics import YOLO
+    except ImportError as exc:
+        raise SystemExit(
+            f"[ERROR] --yolo-model requires the `ultralytics` package "
+            f"(pip install ultralytics). Import failed: {exc}"
+        ) from exc
+    print(f"[INFO] Loading YOLO model: {model_path}")
+    return YOLO(model_path)
+
+
+def find_detections_yolo(frame_full: np.ndarray, model, conf_threshold: float) -> list[Detection]:
+    """YOLO detection path (Path 2 fine-tune), same Detection shape as the HSV
+    path so downstream tracking/CSV/GPS/MAVLink code is shared unchanged.
+    Class-id -> color name comes from the model itself (0=red, 1=green,
+    2=blue per 01_autolabel.py's training label convention).
+
+    An earlier version of this function added agnostic_nms=True plus a
+    crop-based HSV color-verification/correction pass, as a mitigation for a
+    since-fixed model that hallucinated phantom red boxes on green objects.
+    Measured directly against the honest val set: on the RETRAINED model
+    (which genuinely learned red -- recall 1.0, precision 0.897 on real
+    ground truth), both of those "fixes" made things worse (agnostic_nms
+    dropped red recall to 0.40; the HSV correction dropped it to 0.0, by
+    reclassifying genuine tight red boxes as green whenever the crop
+    included enough background). Root-causing and retraining fixed the real
+    problem; this function is deliberately back to plain raw model output.
+    """
+    result = model(frame_full, conf=conf_threshold, verbose=False)[0]
+    boxes = result.boxes
+    detections: list[Detection] = []
+    if boxes is None:
+        return detections
+    names = result.names
+    for i in range(len(boxes)):
+        conf = float(boxes.conf[i].item())
+        cls_id = int(boxes.cls[i].item())
+        color = str(names.get(cls_id, "unknown")).lower()
+        if color not in COLOR_DRAW:
+            color = "unknown"
+        x1, y1, x2, y2 = boxes.xyxy[i].tolist()
+        x = int(max(0, round(x1)))
+        y = int(max(0, round(y1)))
+        w = int(max(0, round(x2 - x1)))
+        h = int(max(0, round(y2 - y1)))
+        if w <= 0 or h <= 0:
+            continue
+        detections.append(
+            Detection(
+                color=color,
+                confidence=conf,
+                cx_full=x + w / 2.0,
+                cy_full=y + h / 2.0,
+                radius_det=max(w, h) / 2.0,
+                bbox_full=(x, y, w, h),
+            )
+        )
+    return detections
+
+
 def update_tracks(
     tracks: list[Track], detections: list[Detection], gate_px: float, max_missed: int, next_track_id: int
 ) -> tuple[list[Track], list[tuple[Detection, int, tuple[float, float]]], int]:
@@ -543,6 +688,38 @@ def main() -> int:
 
     file_mode = args.image_dir is not None or args.video_path is not None
     display = not args.no_display and not file_mode
+    need_overlay = display or args.save_video
+
+    yolo_model = load_yolo_model(args.yolo_model) if args.yolo_model else None
+
+    transmitter = None
+    if args.gcs_ip:
+        try:
+            from mavlink_comms.transmitter import BuoyMavlinkTransmitter
+        except ImportError as exc:
+            print(
+                f"[ERROR] --gcs-ip requires mavlink_comms + vendored mavcore "
+                f"(bash jetson_setup.sh clones it into vendor/mavcore). Import failed: {exc}"
+            )
+            return 1
+        transmitter = BuoyMavlinkTransmitter(connection=f"udpout:{args.gcs_ip}:14555")
+        print(f"[INFO] Transmitting buoy reports to udpout:{args.gcs_ip}:14555")
+
+    telemetry = None
+    if args.connect:
+        try:
+            from mavlink_telemetry import Telemetry
+        except ImportError as exc:
+            print(f"[ERROR] --connect requires pymavlink. Import failed: {exc}")
+            return 1
+        telemetry = Telemetry(args.connect)
+        print(f"[INFO] Connecting live drone telemetry on {args.connect} ...")
+        telemetry.start()
+        print(f"[INFO] Telemetry connected. --origin-lat/--origin-lon "
+              f"({args.origin_lat:.6f}, {args.origin_lon:.6f}) is now the datum; "
+              f"each detection uses the drone's LIVE offset from it.")
+
+    video_writer = None  # lazily opened on the first frame (actual frame size may differ from --width/--height)
 
     tracks = []
     next_track_id = 1
@@ -567,21 +744,34 @@ def main() -> int:
 
         for frame_full, label in gen:
             frame_count += 1
-            frame_full = apply_clahe_to_v(frame_full)
-            frame_det = cv2.resize(frame_full, (args.det_width, args.det_height), interpolation=cv2.INTER_AREA)
-            hsv_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2HSV)
-            hsv_full = cv2.cvtColor(frame_full, cv2.COLOR_BGR2HSV)
 
-            margin_x = int(args.roi_margin * args.det_width)
-            margin_y = int(args.roi_margin * args.det_height)
-            roi = (margin_x, margin_y, args.det_width - margin_x, args.det_height - margin_y)
+            if yolo_model is not None:
+                # Match training: 00_preprocess_training_data.py's default
+                # (non---skip-normalize) path runs every training image
+                # through color_normalize() (CLAHE-YUV -> gray-world WB ->
+                # unsharp) before the model ever sees it (confirmed in
+                # results_sim_courses_v2/README.md). Feeding it a raw frame
+                # here would be a distribution shift vs. what it learned, so
+                # normalize a copy for detection only; frame_full stays raw
+                # for display/recording/GPS projection (geometry is unchanged).
+                detections = find_detections_yolo(color_normalize(frame_full), yolo_model, args.yolo_conf)
+            else:
+                frame_full = apply_clahe_to_v(frame_full)
+                frame_det = cv2.resize(frame_full, (args.det_width, args.det_height), interpolation=cv2.INTER_AREA)
+                hsv_det = cv2.cvtColor(frame_det, cv2.COLOR_BGR2HSV)
+                hsv_full = cv2.cvtColor(frame_full, cv2.COLOR_BGR2HSV)
 
-            detections = find_detections(frame_full, frame_det, hsv_det, hsv_full, roi, args, intr)
+                margin_x = int(args.roi_margin * args.det_width)
+                margin_y = int(args.roi_margin * args.det_height)
+                roi = (margin_x, margin_y, args.det_width - margin_x, args.det_height - margin_y)
+
+                detections = find_detections(frame_full, frame_det, hsv_det, hsv_full, roi, args, intr)
+
             tracks, assigned, next_track_id = update_tracks(
                 tracks, detections, args.track_gate_px, args.max_track_missed, next_track_id
             )
 
-            frame_out = frame_full.copy() if display else None
+            frame_out = frame_full.copy() if need_overlay else None
             image_path = ""
             if assigned:
                 if file_mode:
@@ -594,11 +784,24 @@ def main() -> int:
 
             for det, track_id, (sx, sy) in assigned:
                 detection_count += 1
-                north_m, east_m = project_pixel_to_ground_ned(sx, sy, intr, args.altitude_m)
+                off_north_m, off_east_m = project_pixel_to_ground_ned(
+                    sx, sy, intr, args.altitude_m, args.heading_deg
+                )
+                drone_north_m = drone_east_m = 0.0
+                if telemetry is not None:
+                    snap = telemetry.snapshot()
+                    if snap["have_pose"]:
+                        drone_north_m, drone_east_m = snap["north"], snap["east"]
+                # With no --connect, drone_north_m/east_m are 0 and this is
+                # identical to the old static-origin behaviour (origin_lat/lon
+                # treated as the drone's one and only position). With
+                # --connect, origin_lat/lon is the datum and this is the
+                # drone's LIVE position plus the pixel offset.
+                north_m, east_m = drone_north_m + off_north_m, drone_east_m + off_east_m
                 lat, lon = ned_to_gps(north_m, east_m, args.origin_lat, args.origin_lon)
                 x, y, w, h = det.bbox_full
 
-                if display:
+                if frame_out is not None:
                     color_bgr = COLOR_DRAW[det.color]
                     cv2.rectangle(frame_out, (x, y), (x + w, y + h), color_bgr, 2)
                     cv2.circle(frame_out, (int(sx), int(sy)), 4, color_bgr, -1)
@@ -632,19 +835,41 @@ def main() -> int:
                     f"px=({sx:.0f},{sy:.0f}) NED=N{north_m:+.2f}m E{east_m:+.2f}m "
                     f"-> lat={lat:.7f} lon={lon:.7f}"
                 )
+
+                if transmitter is not None and det.color in ("red", "green", "blue"):
+                    try:
+                        transmitter.transmit(target_id=track_id, color=det.color, lat=lat, lon=lon, frame=frame_count)
+                    except Exception as exc:  # noqa: BLE001 - a dropped report shouldn't kill the detection loop
+                        print(f"[WARN] MAVLink TX failed: {exc}")
             f.flush()
+
+            if args.save_video and frame_out is not None:
+                if video_writer is None:
+                    video_path = os.path.join(args.log_dir, f"session_{int(time.time())}.mp4")
+                    h_out, w_out = frame_out.shape[:2]
+                    video_writer = cv2.VideoWriter(
+                        video_path, cv2.VideoWriter_fourcc(*"mp4v"), 15.0, (w_out, h_out)
+                    )
+                    print(f"[INFO] Saving video to {video_path}")
+                video_writer.write(frame_out)
 
             if display:
                 cv2.imshow(window_name, frame_out)
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                     break
-                if key == ord("c"):
+                if key == ord("c") and yolo_model is None:
                     calibrate_sv_threshold(frame_det, args.calib_color)
 
     gen.close()
     if display:
         cv2.destroyAllWindows()
+    if video_writer is not None:
+        video_writer.release()
+    if transmitter is not None:
+        transmitter.close()
+    if telemetry is not None:
+        telemetry.stop = True
     print(f"[INFO] Processed {frame_count} frame(s), {detection_count} detection(s). Log: {csv_path}")
     return 0
 

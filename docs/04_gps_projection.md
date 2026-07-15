@@ -2,7 +2,7 @@
 
 How a pixel detection in the camera frame becomes an absolute GPS coordinate.
 
-**Code:** `camera_live_feed.py` — `project_pixel_to_ground_ned()` and `ned_to_gps()`
+**Code:** `camera_live_feed.py` - `project_pixel_to_ground_ned()` and `ned_to_gps()`
 
 ---
 
@@ -71,7 +71,7 @@ Stored in `calibration/camera_intrinsics_latest.json`.
 **Calibration rig:** 11×8 checkerboard (10×7 inner corners), 1-inch (0.0254 m) squares, 40 frames.
 
 Pass `--calibration-file calibration/camera_intrinsics_latest.json` to enable undistortion.
-In Gazebo (ogre2), undistortion is skipped — the render engine ignores the `<distortion>` block and produces a clean pinhole image. All sim launchers already pass `--no-undistort`.
+In Gazebo (ogre2), undistortion is skipped - the render engine ignores the `<distortion>` block and produces a clean pinhole image. All sim launchers already pass `--no-undistort`.
 
 ---
 

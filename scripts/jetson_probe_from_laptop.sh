@@ -18,7 +18,7 @@ echo -n "ping ... "
 if ping -c 1 -W 2 "${JETSON_IP}" >/dev/null 2>&1; then
   echo "OK"
 else
-  echo "FAIL (no reply — board off, wrong IP, or USB network not set up)"
+  echo "FAIL (no reply - board off, wrong IP, or USB network not set up)"
   echo "Tip: ifconfig | grep -E '^en|192.168.55'"
   exit 1
 fi

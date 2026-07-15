@@ -1,0 +1,4 @@
+Auto-labeled 1365 images, 1594 total bounding boxes
+[train] 1300 images, 1500 boxes (red=804, green=519, blue=177)
+[val] 65 images, 94 boxes (red=47, green=36, blue=11)
+Per class: red=851, green=555, blue=188

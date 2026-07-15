@@ -29,10 +29,17 @@
 #     gz.log               Gazebo (+ image bridge) stdout/stderr
 #     sitl.log             ArduPilot SITL + MAVProxy console
 #     fly.log              fly_course.py output
-#     verify.log           accuracy_verify.py output
+#     verify.log           accuracy_verify.py output (HSV)
 #     camera.log           camera_live_feed.py output (visual mode)
 #     gps.log              GPS display stream (visual mode)
 #     map.png              top-down detection diagram
+#
+#   If YOLO_MODEL is set, ALSO written (side by side with the HSV files above,
+#   so both detectors can be compared from the same flight):
+#     accuracy_report_yolo.md / accuracy_report_yolo_<ts>.md
+#     summary_yolo.json
+#     detections_yolo_<ts>.csv
+#     verify_yolo.log
 #
 # Options:
 #   --course 1|2|3   Select course world and flight path (default: 1)
@@ -40,7 +47,23 @@
 #   --no-fly         Start sim only; fly manually with fly_course.py
 #   --speed N        Transit speed m/s (default: 1.5)
 #
-# Env overrides: ARDUPILOT, ARDUPILOT_GAZEBO, VRX_GZ, ROS_SETUP, ALTITUDE_M
+# Env overrides: ARDUPILOT, ARDUPILOT_GAZEBO, VRX_GZ, ROS_SETUP, ALTITUDE_M,
+#                YOLO_MODEL, YOLO_CONF, SKIP_HSV
+#
+#   YOLO_MODEL=path/to/weights.pt bash simulation/run_course.sh --course 2 --visual
+#     Runs the visual-mode camera window with the given YOLO model instead of
+#     the default HSV detector, AND launches a second accuracy_verify.py
+#     alongside the HSV one so both can be compared (accuracy_report_yolo.md /
+#     summary_yolo.json). YOLO_CONF (default 0.25) sets --yolo-conf.
+#
+#   SKIP_HSV=1 YOLO_MODEL=path/to/weights.pt bash simulation/run_course.sh --course 2
+#     YOLO-only run: the HSV accuracy_verify.py is never launched, and the YOLO
+#     one writes to the DEFAULT (untagged) accuracy_report.md/summary.json, so
+#     map.png (plot_run.py) reflects the YOLO detector, never HSV.
+#
+#   The camera window and every accuracy_verify.py instance connect to the
+#   drone's LIVE MAVLink position (not a fixed startup point), so projected
+#   GPS positions track the drone as it actually moves through the course.
 #
 # NOTE: this script deliberately does NOT use `set -e`. It is a long-running
 # orchestrator full of background jobs, monitoring loops and `grep` calls (grep
@@ -52,6 +75,9 @@ set -o pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.bash}"
 ALTITUDE_M="${ALTITUDE_M:-10}"
+YOLO_MODEL="${YOLO_MODEL:-}"
+YOLO_CONF="${YOLO_CONF:-0.25}"
+SKIP_HSV="${SKIP_HSV:-0}"
 SIM_TESTS_DIR="${REPO_ROOT}/simulation/sim_tests"
 
 # shellcheck source=gz_env.sh
@@ -83,14 +109,17 @@ case "$COURSE" in
   1) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/robotx_uav_course.sdf"
      COURSE_NAME="Course 1: Straight Navigation Channel"
      WORLD_NAME="robotx_uav_course"
+     LIGHT_BUOY_POSE="50 0 0.76"
      TOTAL_WP=4 ;;
   2) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/course_2_search_field.sdf"
      COURSE_NAME="Course 2: Open Water Survey (Lawnmower)"
      WORLD_NAME="course_2_search_field"
-     TOTAL_WP=6 ;;
+     LIGHT_BUOY_POSE="55 2 0.76"
+     TOTAL_WP=10 ;;
   3) WORLD="${REPO_ROOT}/simulation/gazebo/worlds/course_3_dogleg.sdf"
      COURSE_NAME="Course 3: L-Shaped Dogleg"
      WORLD_NAME="course_3_dogleg"
+     LIGHT_BUOY_POSE="35 42 0.76"
      TOTAL_WP=6 ;;
   *) echo "ERROR: --course must be 1, 2, or 3" >&2; exit 2 ;;
 esac
@@ -98,6 +127,12 @@ esac
 # world has finished loading (all plugins, incl. ArduPilotPlugin's FDM port,
 # are up). A stale image_bridge cannot fake it -- unlike /drone/camera.
 GZ_READY_TOPIC="/world/${WORLD_NAME}/stats"
+
+# Datum (home lat/lon) straight from the world file, so the camera window's
+# live-GPS math (see YOLO_MODEL / --connect note above) uses the same
+# reference point accuracy_verify.py's ground-truth comparison does.
+DATUM_LAT="$(grep -oP '(?<=<latitude_deg>)[-0-9.]+' "${WORLD}" | head -1)"
+DATUM_LON="$(grep -oP '(?<=<longitude_deg>)[-0-9.]+' "${WORLD}" | head -1)"
 
 # --------------------------------------------------------------------------- #
 # Run directory (auto-increments: run_1, run_2, ...)
@@ -167,6 +202,7 @@ kill_all_sim() {
   pkill -9 -f "mavproxy"                    2>/dev/null
   pkill -9 -f "gz sim"                      2>/dev/null
   pkill -9 -f "simulation/gazebo/worlds"    2>/dev/null
+  pkill -9 -f "light_buoy_cycler.py"       2>/dev/null
   pkill -9 -f "image_bridge"               2>/dev/null
   pkill -9 -f "accuracy_verify.py"         2>/dev/null
   pkill -9 -f "camera_live_feed.py"        2>/dev/null
@@ -178,8 +214,8 @@ kill_all_sim() {
 # --------------------------------------------------------------------------- #
 # PIDs to clean up on exit
 # --------------------------------------------------------------------------- #
-GZ_PID=""; SITL_PID=""; BRIDGE_PID=""
-FLY_PID=""; VERIFY_PID=""
+GZ_PID=""; SITL_PID=""; BRIDGE_PID=""; CYCLER_PID=""
+FLY_PID=""; VERIFY_PID=""; VERIFY_YOLO_PID=""
 SITL_XT_PID=""; CAM_XT_PID=""; GPS_XT_PID=""
 CLEANED=0
 
@@ -192,17 +228,19 @@ cleanup() {
   # 1. Give accuracy_verify a chance to flush its report. It is launched with
   #    `exec` so VERIFY_PID is the python itself -- SIGTERM reaches its handler,
   #    which writes accuracy_report.md + summary.json before exiting.
-  if [ -n "$VERIFY_PID" ] && kill -0 "$VERIFY_PID" 2>/dev/null; then
-    pmsg "      Asking accuracy_verify to write its report..."
-    kill -TERM "$VERIFY_PID" 2>/dev/null || true
-    for _ in $(seq 1 12); do
-      kill -0 "$VERIFY_PID" 2>/dev/null || break
-      sleep 0.5
-    done
-  fi
+  for vpid in "$VERIFY_PID" "$VERIFY_YOLO_PID"; do
+    if [ -n "$vpid" ] && kill -0 "$vpid" 2>/dev/null; then
+      pmsg "      Asking accuracy_verify (pid $vpid) to write its report..."
+      kill -TERM "$vpid" 2>/dev/null || true
+      for _ in $(seq 1 12); do
+        kill -0 "$vpid" 2>/dev/null || break
+        sleep 0.5
+      done
+    fi
+  done
 
-  # 2. Terminate tracked PIDs (xterms, fly, gz, sitl, bridge).
-  for pid_var in GPS_XT_PID CAM_XT_PID SITL_XT_PID FLY_PID BRIDGE_PID SITL_PID GZ_PID; do
+  # 2. Terminate tracked PIDs (xterms, fly, cycler, gz, sitl, bridge).
+  for pid_var in GPS_XT_PID CAM_XT_PID SITL_XT_PID FLY_PID CYCLER_PID BRIDGE_PID SITL_PID GZ_PID; do
     eval pid="\${${pid_var}:-}"
     [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
   done
@@ -230,9 +268,11 @@ print(f"[INFO] summary.json updated: run={run_n}, mode={mode}")
 PY
   fi
 
-  # Generate the detection map.
+  # Generate the detection map. plot_run.py defaults to Course 1's world file
+  # if --world is omitted; without this flag every Course 2/3 map silently
+  # drew Course 1's gate layout as "ground truth" on top of the real data.
   pmsg "Generating detection map (map.png)..."
-  if python3 "${REPO_ROOT}/simulation/plot_run.py" "$RUN_DIR" 2>/dev/null; then
+  if python3 "${REPO_ROOT}/simulation/plot_run.py" "$RUN_DIR" --world "${WORLD}" 2>/dev/null; then
     pmsg "map.png written."
   else
     pmsg "WARN: plot_run.py failed (matplotlib installed?)."
@@ -310,6 +350,18 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
+# Scan-the-code light buoy: a helper process delivers the red->green->blue
+# sequence by spawning/swapping an emissive glow-panel model on the buoy top
+# (see simulation/light_buoy_cycler.py for why entity swap, not visual_config:
+# material changes never reach the sensor render scene in gz Harmonic).
+# Launched as soon as the world is rendering so every captured frame of the
+# buoy carries a task-authentic colour.
+pmsg "      Starting light-buoy colour cycler..."
+python3 "${REPO_ROOT}/simulation/light_buoy_cycler.py" --world "${WORLD_NAME}" \
+  --pose "${LIGHT_BUOY_POSE}" \
+  >"${RUN_DIR}/light_cycler.log" 2>&1 &
+CYCLER_PID=$!
+
 # --------------------------------------------------------------------------- #
 # 2. ArduPilot SITL  (own log so the SITL window shows only SITL/MAVProxy text)
 # --------------------------------------------------------------------------- #
@@ -321,7 +373,7 @@ cd "$REPO_ROOT"
 # its stdin from /dev/null -- which delivers instant EOF. Without --daemon,
 # MAVProxy treats that EOF as "quit", unloads every module and exits the moment
 # it reaches the MAV> prompt; sim_vehicle then declares "MAVProxy exited" and
-# tears the SITL stack down, so nothing ever heartbeats on 14550-14552 and the
+# tears the SITL stack down, so nothing ever heartbeats on 14550-14554 and the
 # GPS-fix probe aborts the run. --daemon runs MAVProxy with no interactive
 # shell (it never reads stdin) while still forwarding to every --out target.
 env -u DISPLAY python3 "$SIM_VEHICLE" \
@@ -330,6 +382,8 @@ env -u DISPLAY python3 "$SIM_VEHICLE" \
   --out=udp:127.0.0.1:14550 \
   --out=udp:127.0.0.1:14551 \
   --out=udp:127.0.0.1:14552 \
+  --out=udp:127.0.0.1:14553 \
+  --out=udp:127.0.0.1:14554 \
   >"$SITL_LOG" 2>&1 &
 SITL_PID=$!
 
@@ -356,12 +410,17 @@ if [ "$VISUAL" -eq 1 ]; then
   pmsg "      Window 2: SITL console"
 
   # Window 3: camera_live_feed.py (opens its own OpenCV detection window).
+  YOLO_ARGS=""
+  [ -n "${YOLO_MODEL}" ] && YOLO_ARGS="--yolo-model '${YOLO_MODEL}' --yolo-conf '${YOLO_CONF}'"
   CAM_CMD="cd '${REPO_ROOT}' && source '${ROS_SETUP}' && \
     echo '=== camera_live_feed.py  [nadir camera] ===' && \
     python3 camera_live_feed.py \
       --ros-topic /drone/camera \
       --no-undistort \
-      --altitude-m '${ALTITUDE_M}' 2>&1 | tee '${RUN_DIR}/camera.log'"
+      --altitude-m '${ALTITUDE_M}' \
+      --connect udp:127.0.0.1:14554 \
+      --origin-lat '${DATUM_LAT}' --origin-lon '${DATUM_LON}' \
+      ${YOLO_ARGS} 2>&1 | tee '${RUN_DIR}/camera.log'"
   "${XTERM[@]}" -T "Camera Detector" -geometry 110x28+750+20 \
     -e bash -lc "$CAM_CMD" &
   CAM_XT_PID=$!
@@ -419,19 +478,55 @@ if [ "$VISUAL" -eq 1 ]; then
 fi
 
 # --------------------------------------------------------------------------- #
-# accuracy_verify.py -- background detection logger. `exec` makes VERIFY_PID the
-# python itself, so the cleanup SIGTERM reaches its report-writing handler.
+# accuracy_verify.py -- background detection logger(s). `exec` makes the PID
+# the python itself, so the cleanup SIGTERM reaches its report-writing handler.
+#
+# Two independent instances can run side by side, each on its OWN MAVLink port
+# (14551 for HSV, 14553 for YOLO) so they don't fight over the same UDP socket:
+#   - HSV on 14551, writing the default accuracy_report.md/summary.json --
+#     skipped entirely when SKIP_HSV=1.
+#   - YOLO on 14553 (when YOLO_MODEL is set), writing accuracy_report_yolo.md/
+#     summary_yolo.json for side-by-side comparison -- UNLESS SKIP_HSV=1, in
+#     which case it writes the DEFAULT (untagged) filenames instead, so
+#     map.png (plot_run.py) reflects the YOLO detector, never HSV.
 # --------------------------------------------------------------------------- #
 echo
-pmsg "Starting accuracy_verify.py (detection logger -> ${RUN_DIR})..."
-bash -c "source '${ROS_SETUP}'; exec python3 '${REPO_ROOT}/simulation/accuracy_verify.py' \
-  --world '${WORLD}' \
-  --connect udp:127.0.0.1:14551 \
-  --out-dir '${RUN_DIR}' \
-  --report-dir '${RUN_DIR}' \
-  --summary-json '${RUN_DIR}/summary.json'" \
-  >"${RUN_DIR}/verify.log" 2>&1 &
-VERIFY_PID=$!
+if [ "${SKIP_HSV}" != "1" ]; then
+  pmsg "Starting accuracy_verify.py (detection logger -> ${RUN_DIR})..."
+  bash -c "source '${ROS_SETUP}'; exec python3 '${REPO_ROOT}/simulation/accuracy_verify.py' \
+    --world '${WORLD}' \
+    --connect udp:127.0.0.1:14551 \
+    --out-dir '${RUN_DIR}' \
+    --report-dir '${RUN_DIR}' \
+    --max-speed 2.5 \
+    --summary-json '${RUN_DIR}/summary.json'" \
+    >"${RUN_DIR}/verify.log" 2>&1 &
+  VERIFY_PID=$!
+else
+  pmsg "SKIP_HSV=1: not launching the HSV accuracy_verify.py."
+fi
+
+if [ -n "${YOLO_MODEL}" ]; then
+  YOLO_TAG_ARGS="--tag yolo"
+  YOLO_SUMMARY="${RUN_DIR}/summary_yolo.json"
+  if [ "${SKIP_HSV}" = "1" ]; then
+    YOLO_TAG_ARGS=""
+    YOLO_SUMMARY="${RUN_DIR}/summary.json"
+  fi
+  pmsg "Starting accuracy_verify.py [YOLO] (detection logger -> ${RUN_DIR})..."
+  bash -c "source '${ROS_SETUP}'; exec python3 '${REPO_ROOT}/simulation/accuracy_verify.py' \
+    --world '${WORLD}' \
+    --connect udp:127.0.0.1:14553 \
+    --out-dir '${RUN_DIR}' \
+    --report-dir '${RUN_DIR}' \
+    --max-speed 2.5 \
+    --summary-json '${YOLO_SUMMARY}' \
+    --yolo-model '${YOLO_MODEL}' \
+    --yolo-conf '${YOLO_CONF}' \
+    ${YOLO_TAG_ARGS}" \
+    >"${RUN_DIR}/verify_yolo.log" 2>&1 &
+  VERIFY_YOLO_PID=$!
+fi
 
 # --------------------------------------------------------------------------- #
 # Headless progress monitor: tail fly.log and print a percentage + status.

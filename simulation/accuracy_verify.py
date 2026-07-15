@@ -3,7 +3,8 @@
 
 Runs LIVE during a flight (system python, ROS 2 sourced):
   * subscribes to the drone nadir camera (/drone/camera) and runs the EXACT
-    camera_live_feed.py detection + nadir-projection pipeline,
+    camera_live_feed.py detection + nadir-projection pipeline (HSV by default,
+    or the YOLO fine-tune via --yolo-model, same flag as camera_live_feed.py),
   * reads the drone's live pose/attitude over MAVLink (pymavlink),
   * for every LEVEL frame, projects each detection to a ground point using the
     drone's LIVE altitude, adds the drone's world position, and logs the absolute
@@ -31,7 +32,6 @@ import os
 import re
 import signal
 import sys
-import threading
 import time
 from datetime import datetime
 
@@ -41,7 +41,8 @@ import numpy as np
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 import camera_live_feed as clf  # noqa: E402  (the real pipeline, reused verbatim)
-from color_utils import load_color_ranges  # noqa: E402
+from color_utils import color_normalize, load_color_ranges  # noqa: E402
+from mavlink_telemetry import Telemetry  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
@@ -83,69 +84,6 @@ def parse_world(world_path):
 
 
 # --------------------------------------------------------------------------- #
-# MAVLink telemetry (background thread)
-# --------------------------------------------------------------------------- #
-class Telemetry:
-    def __init__(self, endpoint):
-        from pymavlink import mavutil
-        self.mavutil = mavutil
-        self.endpoint = endpoint
-        self.lock = threading.Lock()
-        self.north = self.east = self.down = 0.0
-        self.vx = self.vy = 0.0
-        self.roll = self.pitch = 0.0
-        self.lat = self.lon = self.rel_alt = 0.0
-        self.have_pose = False
-        self.armed = False
-        self.was_armed = False
-        self.stop = False
-        self.m = None
-
-    def start(self):
-        self.m = self.mavutil.mavlink_connection(self.endpoint)
-        self.m.wait_heartbeat()
-        # Ask for position + attitude streams (harmless if MAVProxy already did).
-        for stream in (self.mavutil.mavlink.MAV_DATA_STREAM_POSITION,
-                       self.mavutil.mavlink.MAV_DATA_STREAM_EXTRA1):
-            self.m.mav.request_data_stream_send(
-                self.m.target_system, self.m.target_component, stream, 10, 1)
-        threading.Thread(target=self._loop, daemon=True).start()
-        return self.m.target_system
-
-    def _loop(self):
-        while not self.stop:
-            msg = self.m.recv_match(
-                type=["LOCAL_POSITION_NED", "ATTITUDE", "GLOBAL_POSITION_INT", "HEARTBEAT"],
-                blocking=True, timeout=1.0)
-            if msg is None:
-                continue
-            t = msg.get_type()
-            with self.lock:
-                if t == "LOCAL_POSITION_NED":
-                    self.north, self.east, self.down = msg.x, msg.y, msg.z
-                    self.vx, self.vy = msg.vx, msg.vy
-                    self.have_pose = True
-                elif t == "ATTITUDE":
-                    self.roll, self.pitch = msg.roll, msg.pitch
-                elif t == "GLOBAL_POSITION_INT":
-                    self.lat, self.lon = msg.lat / 1e7, msg.lon / 1e7
-                    self.rel_alt = msg.relative_alt / 1000.0
-                elif t == "HEARTBEAT":
-                    self.armed = bool(msg.base_mode &
-                                      self.mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
-                    if self.armed:
-                        self.was_armed = True
-
-    def snapshot(self):
-        with self.lock:
-            return dict(north=self.north, east=self.east, down=self.down,
-                        vx=self.vx, vy=self.vy, roll=self.roll, pitch=self.pitch,
-                        lat=self.lat, lon=self.lon, rel_alt=self.rel_alt,
-                        have_pose=self.have_pose, armed=self.armed,
-                        was_armed=self.was_armed)
-
-
-# --------------------------------------------------------------------------- #
 # Detection node
 # --------------------------------------------------------------------------- #
 def make_args(alt, no_undistort):
@@ -158,7 +96,8 @@ def make_args(alt, no_undistort):
 
 
 def build_report(buoys, datum, rows, started, ended, min_duration, match_radius,
-                 csv_path, world_path, report_path, summary_json_path=None):
+                 csv_path, world_path, report_path, summary_json_path=None, tag="",
+                 detector="hsv"):
     duration = ended - started
     n_det = len(rows)
     # Group detections by nearest ground-truth buoy of the same colour.
@@ -193,6 +132,7 @@ def build_report(buoys, datum, rows, started, ended, min_duration, match_radius,
     if not dur_ok:
         lines.append(f"- **WARNING:** flight shorter than the {min_duration:.0f}s minimum -- "
                      f"results below are NOT a verified sustained flight (possible single-frame grab).")
+    lines.append(f"- **Detector:** {detector}")
     lines.append(f"- **World (ground truth):** `{os.path.relpath(world_path, REPO)}`")
     lines.append(f"- **Detection log:** `{os.path.relpath(csv_path, REPO)}`")
     lines.append(f"- **Datum:** lat {datum['lat']:.6f}, lon {datum['lon']:.6f}")
@@ -233,14 +173,17 @@ def build_report(buoys, datum, rows, started, ended, min_duration, match_radius,
     os.makedirs(os.path.dirname(os.path.abspath(report_path)), exist_ok=True)
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report)
-    # Also refresh the canonical latest-report path.
-    latest = os.path.join(os.path.dirname(report_path), "accuracy_report.md")
+    # Also refresh the canonical latest-report path (tagged, so an HSV and a
+    # YOLO run in the same directory each keep their own "latest" pointer).
+    latest_name = f"accuracy_report_{tag}.md" if tag else "accuracy_report.md"
+    latest = os.path.join(os.path.dirname(report_path), latest_name)
     if os.path.abspath(latest) != os.path.abspath(report_path):
         with open(latest, "w", encoding="utf-8") as f:
             f.write(report)
 
     colour_buoys_total = len([b for b in buoys if b["color"] in ("red", "green")])
     summary = {
+        "detector": detector,
         "timestamp": datetime.fromtimestamp(started).isoformat(timespec="seconds"),
         "duration_s": round(duration, 1),
         "duration_ok": dur_ok,
@@ -321,12 +264,15 @@ def report_from_csv(args, buoys, datum):
     base = os.path.basename(csv_path)
     ts = base[len("detections_"):-len(".csv")] if base.startswith("detections_") \
         else datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = os.path.join(args.report_dir, f"accuracy_report_{ts}.md")
-    summary_json = os.path.join(os.path.dirname(report_path), "summary.json") \
+    tag_suffix = f"_{args.tag}" if args.tag else ""
+    report_path = os.path.join(args.report_dir, f"accuracy_report{tag_suffix}_{ts}.md")
+    summary_name = f"summary{tag_suffix}.json"
+    summary_json = os.path.join(os.path.dirname(report_path), summary_name) \
         if args.summary_json is None else args.summary_json
     report, rp, latest, _ = build_report(
         buoys, datum, rows, started, ended, args.min_duration, args.match_radius,
-        csv_path, args.world, report_path, summary_json_path=summary_json)
+        csv_path, args.world, report_path, summary_json_path=summary_json, tag=args.tag,
+        detector="yolo" if args.yolo_model else "hsv")
     print("\n" + report)
     print(f"[INFO] offline report from {csv_path}")
     print(f"[INFO] report written: {rp}")
@@ -361,6 +307,14 @@ def main():
                          "Needs NO rclpy / ROS -- pure stdlib + the world ground truth.")
     ap.add_argument("--summary-json", default=None, metavar="PATH",
                     help="Write a summary.json alongside the report (default: same dir as report).")
+    ap.add_argument("--yolo-model", default=None, metavar="PATH",
+                    help="Use the YOLO fine-tuned detector instead of HSV (same flag as "
+                         "camera_live_feed.py). Omit to keep the HSV baseline.")
+    ap.add_argument("--yolo-conf", type=float, default=0.25)
+    ap.add_argument("--tag", default="", metavar="NAME",
+                    help="Suffix report/summary/csv filenames with _NAME (e.g. 'yolo'), so an "
+                         "HSV run and a YOLO run can write to the same --out-dir/--report-dir "
+                         "side by side without clobbering each other's output.")
     args = ap.parse_args()
 
     buoys, datum = parse_world(args.world)
@@ -375,19 +329,22 @@ def main():
     # Fail fast with a clear hint if the live-camera ROS deps are missing, BEFORE
     # we block waiting for a MAVLink heartbeat.
     import importlib.util
-    missing = next((m for m in ("rclpy", "cv_bridge", "sensor_msgs")
+    missing = next((m for m in ("rclpy", "sensor_msgs")
                     if importlib.util.find_spec(m) is None), None)
     if missing:
         _print_ros_help(missing, args.connect)
         return 2
 
-    clf.COLOR_RANGES = load_color_ranges(classes_dir=os.path.join(REPO, "captures/classes"))
+    yolo_model = clf.load_yolo_model(args.yolo_model) if args.yolo_model else None
+    if yolo_model is None:
+        clf.COLOR_RANGES = load_color_ranges(classes_dir=os.path.join(REPO, "captures/classes"))
     calib = clf.load_calibration(os.path.join(REPO, "calibration/camera_intrinsics_latest.json"))
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    tag_suffix = f"_{args.tag}" if args.tag else ""
     os.makedirs(args.out_dir, exist_ok=True)
-    csv_path = os.path.join(args.out_dir, f"detections_{ts}.csv")
-    report_path = os.path.join(args.report_dir, f"accuracy_report_{ts}.md")
+    csv_path = os.path.join(args.out_dir, f"detections{tag_suffix}_{ts}.csv")
+    report_path = os.path.join(args.report_dir, f"accuracy_report{tag_suffix}_{ts}.md")
 
     print(f"[INFO] connecting telemetry on {args.connect} ...")
     tel = Telemetry(args.connect)
@@ -398,15 +355,31 @@ def main():
     # only joins the Python path after the ROS env is sourced -- so a bare
     # ModuleNotFoundError almost always means ROS just wasn't sourced, not that it
     # is missing. (Use --from-csv to rebuild a report with no ROS at all.)
+    # Image decoding is manual numpy (not cv_bridge): the sim camera publishes
+    # plain rgb8, and cv_bridge's compiled cvtColor2 segfaults when a pip
+    # NumPy 2.x shadows the NumPy 1.x it was built against (same reasoning as
+    # camera_live_feed.ros_frame_source, which hit this in practice).
     try:
         import rclpy
-        from cv_bridge import CvBridge
         from rclpy.node import Node
         from sensor_msgs.msg import Image
     except ModuleNotFoundError as exc:  # backstop: find_spec passed but import failed
         tel.stop = True
         _print_ros_help(exc.name, args.connect)
         return 2
+
+    def decode_image_msg(msg) -> "np.ndarray | None":
+        if msg.encoding not in ("rgb8", "bgr8"):
+            return None
+        buf = np.frombuffer(msg.data, dtype=np.uint8)
+        expected = msg.height * msg.step
+        if buf.size < expected:
+            return None
+        img = buf[:expected].reshape(msg.height, msg.step)[:, : msg.width * 3]
+        img = img.reshape(msg.height, msg.width, 3)
+        if msg.encoding == "rgb8":
+            img = img[:, :, ::-1]  # RGB -> BGR for OpenCV
+        return np.ascontiguousarray(img)
 
     # Per-frame altitude is taken live from telemetry below; 10.0 is just the
     # placeholder used until the first LOCAL_POSITION_NED / GLOBAL_POSITION_INT.
@@ -425,8 +398,10 @@ def main():
 
     class Det(Node):
         def __init__(self):
-            super().__init__("accuracy_verify")
-            self.b = CvBridge()
+            # Tag-qualified node name: two accuracy_verify.py instances (HSV +
+            # YOLO) run side by side against the same ROS domain, and ROS 2
+            # node names should be unique within it.
+            super().__init__(f"accuracy_verify_{args.tag}" if args.tag else "accuracy_verify")
             self.tracks = []
             self.nid = 1
             self.create_subscription(Image, args.ros_topic, self.cb, 10)
@@ -436,8 +411,10 @@ def main():
             if not snap["have_pose"]:
                 return
             try:
-                img = self.b.imgmsg_to_cv2(msg, "bgr8")
+                img = decode_image_msg(msg)
             except Exception:
+                return
+            if img is None:
                 return
             if state["started"] is None and snap["was_armed"]:
                 state["started"] = time.time()
@@ -453,14 +430,20 @@ def main():
 
             alt = max(snap["rel_alt"], -snap["down"], 0.5)
             cl_args.altitude_m = alt
-            ff = clf.apply_clahe_to_v(img)
-            fd = cv2.resize(ff, (cl_args.det_width, cl_args.det_height),
-                            interpolation=cv2.INTER_AREA)
-            hd = cv2.cvtColor(fd, cv2.COLOR_BGR2HSV)
-            hf = cv2.cvtColor(ff, cv2.COLOR_BGR2HSV)
-            mx, my = int(cl_args.roi_margin * cl_args.det_width), int(cl_args.roi_margin * cl_args.det_height)
-            roi = (mx, my, cl_args.det_width - mx, cl_args.det_height - my)
-            dets = clf.find_detections(ff, fd, hd, hf, roi, cl_args, intr)
+            if yolo_model is not None:
+                # Mirrors camera_live_feed.py's YOLO path: normalize a copy for
+                # detection only (training images went through this same
+                # color_normalize() pipeline; see results_sim_courses_v2/README.md).
+                dets = clf.find_detections_yolo(color_normalize(img), yolo_model, args.yolo_conf)
+            else:
+                ff = clf.apply_clahe_to_v(img)
+                fd = cv2.resize(ff, (cl_args.det_width, cl_args.det_height),
+                                interpolation=cv2.INTER_AREA)
+                hd = cv2.cvtColor(fd, cv2.COLOR_BGR2HSV)
+                hf = cv2.cvtColor(ff, cv2.COLOR_BGR2HSV)
+                mx, my = int(cl_args.roi_margin * cl_args.det_width), int(cl_args.roi_margin * cl_args.det_height)
+                roi = (mx, my, cl_args.det_width - mx, cl_args.det_height - my)
+                dets = clf.find_detections(ff, fd, hd, hf, roi, cl_args, intr)
             self.tracks, assigned, self.nid = clf.update_tracks(
                 self.tracks, dets, cl_args.track_gate_px, cl_args.max_track_missed, self.nid)
 
@@ -518,10 +501,12 @@ def main():
 
     started = state["started"] or t_launch
     ended = time.time()
-    summary_json = args.summary_json or os.path.join(os.path.dirname(report_path), "summary.json")
+    summary_json = args.summary_json or os.path.join(
+        os.path.dirname(report_path), f"summary{tag_suffix}.json")
     report, rp, latest, _ = build_report(
         buoys, datum, rows, started, ended, args.min_duration, args.match_radius,
-        csv_path, args.world, report_path, summary_json_path=summary_json)
+        csv_path, args.world, report_path, summary_json_path=summary_json, tag=args.tag,
+        detector="yolo" if args.yolo_model else "hsv")
     print("\n" + report)
     print(f"[INFO] report written: {rp}")
     print(f"[INFO] latest report : {latest}")

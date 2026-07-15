@@ -12,15 +12,21 @@ All scripts live in `yolo_comparison_test/path2_switch_proposal/scripts/`.
 captures/ (raw images)
     │
     ▼
-01_autolabel.py          ← HSV auto-labels → YOLO .txt format
+00_preprocess_training_data.py  ← raw-level train/val split FIRST, then
+    │                             augment each side separately + normalize
+    ▼                             (split_manifest.txt records the split)
+preprocessed_captures/          ← train/ + val/ + classes/
     │
     ▼
-path2_dataset/           ← images/ + labels/ + dataset.yaml
+01_autolabel.py --captures-dir ../preprocessed_captures
+    │                           ← HSV auto-labels → YOLO .txt, split preserved
+    ▼
+path2_dataset/                  ← images/{train,val} + labels/{train,val} + dataset.yaml
     │
     ▼
-02_finetune.py           ← fine-tune YOLOv11n → best.pt
-    │
-    ├── validation_step1_proper_split.py   ← 80/20 train/val split
+02_finetune.py                  ← fine-tune YOLOv11n → best.pt
+    │                             (per-epoch val metrics are honest: real split)
+    ├── validation_step1_proper_split.py   ← stages the raw-level split (refuses to re-split)
     ├── validation_step2_retrain.py        ← retrain on train-only
     ├── validation_step3_val_inference.py  ← held-out metrics
     ├── validation_step4_overfit_check.py  ← loss gap check
@@ -30,9 +36,21 @@ path2_dataset/           ← images/ + labels/ + dataset.yaml
 best.pt → copy to Jetson
 ```
 
+> **Why the split happens in step 00, not step 1 of validation:** the old flow
+> split AFTER augmentation, so an original and its own augmented variants
+> could land on opposite sides of the "held-out" split. That leaked
+> near-duplicates into val and inflated mAP while the loss-gap check screamed
+> overfit. The split now happens once, at the raw-capture level, and every
+> downstream step preserves it.
+
+> **Sim data works too:** the Gazebo courses (docs/05) are a valid capture
+> source; see `results_sim_courses_v2/README.md` for a full sim-trained run
+> including the blue class from the cycling light buoy. Sim-trained weights
+> still need real-photo fine-tuning before field use.
+
 ---
 
-## Step 0 — Collect images
+## Step 0 - Collect images
 
 Capture 30–50 images per buoy color at actual venue conditions. See [02_data_pipeline.md](02_data_pipeline.md) for how to use `camera_capture_spacebar.py`.
 
@@ -46,17 +64,28 @@ yolo_comparison_test/path2_switch_proposal/captures/classes/
 └── blue.jpg     ← tight crop of a blue buoy
 ```
 
-**Important:** filename stems must be exactly `red`, `green`, `blue`. The auto-label script reads the color name from the filename — any other names are silently ignored. One crop per color is sufficient; pick the most representative, well-lit shot.
+**Important:** filename stems must be exactly `red`, `green`, `blue`. The auto-label script reads the color name from the filename - any other names are silently ignored. One crop per color is sufficient; pick the most representative, well-lit shot.
 
 ---
 
-## Step 1 — Auto-label
+## Step 0.5 - Preprocess (split + augment + normalize)
+
+```bash
+cd yolo_comparison_test/path2_switch_proposal/scripts
+python 00_preprocess_training_data.py          # defaults: aug 4x train, val pristine, 80/20
+```
+
+Outputs `../preprocessed_captures/` with `train/`, `val/`, `classes/`, and
+`split_manifest.txt`. Val originals are held out at the raw level and never
+augmented by default (noise robustness is measured separately by step 5).
+
+## Step 1 - Auto-label
 
 Auto-labeling uses the HSV detector to generate YOLO bounding box labels. No manual drawing needed as a first pass.
 
 ```bash
 cd yolo_comparison_test/path2_switch_proposal/scripts
-python 01_autolabel.py
+python 01_autolabel.py --captures-dir ../preprocessed_captures
 ```
 
 **What it does:**
@@ -95,7 +124,7 @@ Even fixing 10–20% of the worst labels makes a meaningful difference in traini
 
 ---
 
-## Step 2 — Fine-tune (quick full run)
+## Step 2 - Fine-tune (quick full run)
 
 ```bash
 cd yolo_comparison_test/path2_switch_proposal/scripts
@@ -104,12 +133,12 @@ python 02_finetune.py
 
 **What it does:**
 - Loads base weights `yolo11n.pt` (YOLO Nano, pre-trained on COCO)
-- Trains on the full `path2_dataset/` (train and val = same images in this script — use validation steps below for honest eval)
+- Trains on the full `path2_dataset/` (train and val = same images in this script - use validation steps below for honest eval)
 - Saves weights to `scripts/path2_training/balloon_finetune/weights/best.pt`
 - Runs inference on all captures → annotated frames in `scripts/path2_results/annotated/`
 - Writes `scripts/path2_results/detections.csv`
 
-Training runs for 100 epochs by default on CPU or CUDA if available. On a MacBook this takes ~10–20 minutes for ~100 images. On Jetson it takes longer — prefer training on the Mac and copying weights over.
+Training runs for 100 epochs by default on CPU or CUDA if available. On a MacBook this takes ~10–20 minutes for ~100 images. On Jetson it takes longer - prefer training on the Mac and copying weights over.
 
 **Check annotated output:**
 ```
@@ -118,7 +147,7 @@ scripts/path2_results/annotated/   ← open any JPG to visually verify boxes
 
 ---
 
-## Step 3 — Honest validation (run all 5 steps)
+## Step 3 - Honest validation (run all 5 steps)
 
 The full-dataset run in Step 2 trains and validates on the same images (not honest). Run the 5 validation scripts to get real held-out metrics.
 
@@ -168,7 +197,7 @@ python regenerate_val_grids.py
 
 ---
 
-## Step 4 — Export to ONNX and copy to Jetson
+## Step 4 - Export to ONNX and copy to Jetson
 
 `run_detection_jetson.sh` searches for `buoy_best.onnx` (not `.pt`). Export first:
 
@@ -195,7 +224,7 @@ scp yolo_comparison_test/path2_switch_proposal/scripts/training/balloon_proper/w
 
 > **Why ONNX?** `run_detection_jetson.sh` looks for `buoy_best.onnx` first. ONNX also runs faster on Jetson via TensorRT than raw `.pt`.
 
-> **Note — YOLO integration pending (TODO #2):** `run_detection_jetson.sh` passes `--yolo-model` and other flags to `camera_live_feed.py` that don't exist yet. Until TODO #2 is done, the `.onnx` file can be placed on the Jetson but won't be called automatically.
+> **YOLO integration (TODO #2) is implemented:** `camera_live_feed.py` now supports `--yolo-model` (plus `--yolo-conf`, `--gcs-ip`, `--save-video`, `--drone-lat`/`--drone-lon`, `--heading-deg`, `--headless`), so once the `.onnx` file lands at `~/robotx-navigation/buoy_best.onnx`, `run_detection_jetson.sh` will pick it up and use it automatically. Not yet verified with a live camera/model - no network was available to install `ultralytics` where this was implemented, so run it once for real before trusting it in the field.
 
 ---
 
@@ -203,7 +232,7 @@ scp yolo_comparison_test/path2_switch_proposal/scripts/training/balloon_proper/w
 
 | File | Notes |
 |------|-------|
-| `yolo11n.pt` (repo root) | Base YOLOv11 Nano — COCO pretrained, no balloon fine-tuning |
+| `yolo11n.pt` (repo root) | Base YOLOv11 Nano - COCO pretrained, no balloon fine-tuning |
 | `yolo_comparison_test/path2_switch_proposal/demo_preserved/weights/buoy_balloon_roboflow_best.pt` | Previous best model from Roboflow-labeled training run |
 | `buoy_best.pt` (Jetson, `~/robotx-navigation/`) | Currently deployed model |
 

@@ -19,7 +19,7 @@ echo "hostname: $(hostname)"
 echo
 
 echo "--- USB WiFi hardware ---"
-lsusb | grep -iE 'realtek|tp-link|802.11|wireless' || echo "(no obvious WiFi in lsusb — is dongle plugged in?)"
+lsusb | grep -iE 'realtek|tp-link|802.11|wireless' || echo "(no obvious WiFi in lsusb - is dongle plugged in?)"
 echo
 
 echo "--- kernel / driver (last 15 lines) ---"
@@ -76,7 +76,7 @@ if [[ -n "${WIP}" ]]; then
   echo "SSH from laptop (same WiFi network):"
   echo "  ssh babydragon@${WIP}"
   echo
-  echo "Buoy pipeline on Jetson — use your laptop WiFi IP for --gcs-ip:"
+  echo "Buoy pipeline on Jetson - use your laptop WiFi IP for --gcs-ip:"
   echo "  python3 camera_live_feed.py ... --gcs-ip <laptop-wifi-ip>"
 else
   echo "Not connected yet. Run:"

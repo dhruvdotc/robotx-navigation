@@ -23,7 +23,7 @@ captures/
 
 ---
 
-## Step 1 — Capture images
+## Step 1 - Capture images
 
 Point the camera at the target scene and press Spacebar to save frames.
 
@@ -45,13 +45,13 @@ After capturing, hand-pick **one tight, well-lit crop per color** and save them 
 - `captures/classes/green.jpg`
 - `captures/classes/blue.jpg`
 
-The filename stem must be exactly `red`, `green`, or `blue` — `color_utils.derive_class_hsv_ranges()` reads the color name from the filename. Other filenames in `classes/` are silently ignored.
+The filename stem must be exactly `red`, `green`, or `blue` - `color_utils.derive_class_hsv_ranges()` reads the color name from the filename. Other filenames in `classes/` are silently ignored.
 
 These are used by `hsv_batch_detect.py` and `camera_live_feed.py` to automatically derive HSV ranges for that day's lighting. If `captures/classes/` is empty or missing, the scripts fall back to the hard-coded fallback ranges in `color_utils.py`.
 
 ---
 
-## Step 2 — Augmentation smoke test
+## Step 2 - Augmentation smoke test
 
 Run before batch-detecting to see how the detector holds up under UAV-realistic noise.
 
@@ -60,14 +60,14 @@ python augment_test.py                        # uses first .jpg in captures/
 python augment_test.py captures/my_image.jpg  # specific file
 ```
 
-Saves `captures/hsv_results/augmentation_test.jpg` — a 2×2 grid:
+Saves `captures/hsv_results/augmentation_test.jpg` - a 2×2 grid:
 - top-left: clean image + detections
 - top-right / bottom-left / bottom-right: three independently noise-augmented variants
 
 The noise model (`apply_uav_noise` in `augment_test.py`) applies:
-1. Gaussian blur (σ=2.5) — simulates motion smear
-2. Random-angle motion blur (13×13 kernel) — simulates propwash direction
-3. 3 random glare hotspots (Gaussian falloff, +65 V channel) — simulates sun glints
+1. Gaussian blur (σ=2.5) - simulates motion smear
+2. Random-angle motion blur (13×13 kernel) - simulates propwash direction
+3. 3 random glare hotspots (Gaussian falloff, +65 V channel) - simulates sun glints
 4. Gaussian pixel noise (σ=8)
 
 Also prints avg retention rate (how many detections survive the noise on average).
@@ -76,7 +76,7 @@ Also prints avg retention rate (how many detections survive the noise on average
 
 ---
 
-## Step 3 — Batch detection
+## Step 3 - Batch detection
 
 Runs the full two-stage pipeline over every image in `captures/` and writes annotated output + CSV.
 
@@ -101,12 +101,12 @@ Key tuning flags:
 | `--nms-iou` | 0.45 | Non-max suppression IoU threshold |
 
 **Outputs:**
-- `captures/hsv_results/detections.csv` — one row per detection with `image, color, confidence, cx, cy, x, y, w, h, area`
-- `captures/hsv_results/annotated/*.jpg` — original images with bounding boxes drawn
+- `captures/hsv_results/detections.csv` - one row per detection with `image, color, confidence, cx, cy, x, y, w, h, area`
+- `captures/hsv_results/annotated/*.jpg` - original images with bounding boxes drawn
 
 ---
 
-## Step 4 — Review metrics
+## Step 4 - Review metrics
 
 ```bash
 python metrics_summary.py
@@ -119,13 +119,13 @@ Prints to stdout:
 - Images with zero detections (potential misses)
 - A one-liner "presentation summary" you can copy into slides
 
-Also saves `captures/hsv_results/metrics.png` — a horizontal bar chart.
+Also saves `captures/hsv_results/metrics.png` - a horizontal bar chart.
 
 ```bash
 python visualize_results.py
 ```
 
-Generates `captures/hsv_results/results_diagram.png` — a full presentation-ready panel with detection counts, bar chart, confidence ranges, and before/after ROI comparison.
+Generates `captures/hsv_results/results_diagram.png` - a full presentation-ready panel with detection counts, bar chart, confidence ranges, and before/after ROI comparison.
 
 > **Note:** `visualize_results.py` currently has hard-coded numbers (from the 6/26 run). Update the constants at the top of the file after each new batch run.
 

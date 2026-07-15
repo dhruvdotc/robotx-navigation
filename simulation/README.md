@@ -6,11 +6,11 @@ An ArduPilot-SITL drone flies a nadir camera over RobotX-spec buoy courses on an
 
 ## Quick Start
 
-### Headless — terminal progress updates, no windows
+### Headless - terminal progress updates, no windows
 
 ```bash
 bash simulation/run_course.sh --course 1   # straight channel  (~60 s)
-bash simulation/run_course.sh --course 2   # lawnmower survey  (~3 min)
+bash simulation/run_course.sh --course 2   # lawnmower survey  (~5 min)
 bash simulation/run_course.sh --course 3   # L-shaped dogleg   (~90 s)
 ```
 
@@ -32,7 +32,7 @@ Sample output:
 [10:25:34] 100% | waypoint 4/4 reached: light buoy
 ```
 
-### Visual — 4 windows open simultaneously
+### Visual - 4 windows open simultaneously
 
 ```bash
 bash simulation/run_course.sh --course 1 --visual
@@ -76,6 +76,7 @@ Every run saves to `simulation/sim_tests/run_N/` (N auto-increments):
 | `verify.log` | accuracy_verify.py output |
 | `camera.log` | camera_live_feed.py output (visual mode only) |
 | `gps.log` | GPS display stream (visual mode only) |
+| `light_cycler.log` | Scan-the-code light buoy color transitions (red -> green -> blue) |
 | `map.png` | Top-down detection diagram: detected vs GT positions, error lines |
 
 ---
@@ -96,7 +97,7 @@ Three red/green gate pairs along a straight East axis, plus a scan-the-code ligh
 | gate2_red   | 25 | -1.25 | red   |
 | gate3_green | 40 | +1.25 | green |
 | gate3_red   | 40 | -1.25 | red   |
-| light_buoy  | 50 |  0    | -     |
+| light_buoy  | 50 |  0    | cycles r/g/b |
 
 **Flight path:** Straight East at N=0, hover 4s per gate.
 
@@ -110,7 +111,7 @@ bash simulation/run_course.sh --course 1
 **File:** `gazebo/worlds/course_2_search_field.sdf`
 **Task inspiration:** RobotX "Scan the Code" + pre-race aerial recon
 
-Seven buoys scattered across a 60x30 m open-water field with no channel structure. The drone runs a three-strip lawnmower pattern to survey the whole field. Tests the detector's ability to find and GPS-tag buoys without a predictable layout.
+Seven buoys scattered across a 60x30 m open-water field with no channel structure. The drone runs a five-strip lawnmower pattern to survey the whole field. Tests the detector's ability to find and GPS-tag buoys without a predictable layout.
 
 | Buoy | East (m) | North (m) | Color |
 |------|----------|-----------|-------|
@@ -120,9 +121,9 @@ Seven buoys scattered across a 60x30 m open-water field with no channel structur
 | red2   | 31 |  +6 | red   |
 | green3 | 42 |  +7 | green |
 | red3   | 48 |  -5 | red   |
-| light_buoy | 55 | +2 | -  |
+| light_buoy | 55 | +2 | cycles r/g/b |
 
-**Flight path:** Three East-West strips at N=-15, N=0, N=+15 (lawnmower). Every buoy falls within 8 m of nadir at 10 m AGL.
+**Flight path:** Five East-West strips at N=-12, -6, 0, +6, +12 (lawnmower). The drone holds a fixed North heading throughout (it does not yaw to face each East-West leg), so the binding cross-track reach on these legs is the camera's *vertical* FOV (~4.1 m at 10 m AGL), not the wider ~7.3 m horizontal one. The old 3-strip layout (N=-15, 0, +15) was spaced using the wrong, wider FOV number and left buoys near N=+-7/+-8 with ~0 m of real margin; 5 strips at 6 m spacing keep every buoy within ~2 m of a strip line.
 
 ```bash
 bash simulation/run_course.sh --course 2
@@ -146,7 +147,7 @@ Two-leg L-shaped course: two gates going East, then a 90-degree right turn and t
 | gate3_red   | 33.75 | 15   | red   | 2 (North) |
 | gate4_green | 36.25 | 30   | green | 2 (North) |
 | gate4_red   | 33.75 | 30   | red   | 2 (North) |
-| light_buoy  | 35    | 42   | -     | end      |
+| light_buoy  | 35    | 42   | cycles r/g/b | end      |
 
 **Flight path:** East to corner at (E=35, N=0), then pivot North to (E=35, N=42).
 
@@ -227,21 +228,48 @@ All three courses contain floating debris objects designed to generate false-pos
 
 | Type | Shape | Color | HSV challenge |
 |------|-------|-------|---------------|
-| Olive-green panels | Flat box ~0.8x0.5x0.1 m | Dull olive green | Hue ~60-70, just below the detector's green range (75-99). Borderline false positive. |
+| Olive-green panels | Flat box ~0.8x0.5x0.1 m | Dull olive green | Hue ~60-70, just below the detector's green range (75-105). Borderline false positive. |
 | Orange-brown crates | Box ~0.5x0.5x0.4 m | Warm tan/brown | Hue ~15-25, warm tones that can bleed into the red range at low saturation. |
 | Gray barrels | Cylinder r=0.15-0.2 m | Mid-gray | Neutral distractor, tests shape-based filtering. |
 | Gray flat panels | Flat box ~0.9x0.6x0.1 m | Medium gray | Neutral distractor, tests size gating. |
 
 Key difference from real buoys: **no emissive material**. Real buoys have a bright emissive component; obstacles rely only on ambient/diffuse lighting, so they look duller from nadir. The detector should suppress them via confidence thresholding and size gating, but the olive panels in particular will stress-test the green HSV range boundary.
 
-Obstacles are placed clear of the gate corridors (so they never occlude a gate) yet inside the nadir camera's swept footprint, so they actually appear in frame. Because the drone holds a North heading (`WP_YAW_BEHAVIOR=0`), the binding cross-track reach is the camera's *vertical* FOV — only ±4.1 m at 10 m AGL — for legs flown East (Course 1, Course 2 strips, Course 3 leg 1), and the *horizontal* FOV (±7.3 m) for the North-bound Course 3 leg 2. Distractors are offset ~3 m laterally on East legs and ~4 m on the North leg. (Earlier versions sat at 5–12 m offsets, outside every frame.)
+Obstacles are placed clear of the gate corridors (so they never occlude a gate) yet inside the nadir camera's swept footprint, so they actually appear in frame. Because the drone holds a North heading (`WP_YAW_BEHAVIOR=0`), the binding cross-track reach is the camera's *vertical* FOV - only ±4.1 m at 10 m AGL - for legs flown East (Course 1, Course 2 strips, Course 3 leg 1), and the *horizontal* FOV (±7.3 m) for the North-bound Course 3 leg 2. Distractors are offset ~3 m laterally on East legs and ~4 m on the North leg. (Earlier versions sat at 5–12 m offsets, outside every frame.)
+
+## Scan-the-Code Light Buoy (color cycling)
+
+Every course ends at a `light_buoy` modeled on the RobotX Scan the Code task:
+a dark buoy whose light panel cycles red -> green -> blue every 3 seconds.
+`run_course.sh` launches `simulation/light_buoy_cycler.py` automatically; the
+cycler spawns/swaps a small emissive glow-panel model on the buoy top each
+phase (see the script docstring for why entity swap instead of material
+changes: gz-sim Harmonic accepts `visual_config` material updates but never
+applies them to the SENSOR render scene, so the drone camera keeps seeing the
+old color even though the service returns true).
+
+To collect blue training data the way the real task works, loiter over the
+buoy so the camera reads full color cycles:
+
+```bash
+bash simulation/run_course.sh --course 1 --no-fly     # sim up, no auto-flight
+python3 simulation/fly_course.py --gates '0:50' --hover-s 100 --countdown 0 \
+    --connect udp:127.0.0.1:14550                      # hover at the buoy
+# plus camera_live_feed.py --ros-topic /drone/camera in another terminal
+```
+
+Color values are tuned to what the sensor actually renders, not color theory:
+scene lighting shifts hue ~10-12 points green-ward, and a BRIGHT blue panel is
+invisible to the detector's grayscale Canny stage against blue-green water
+(measured: gray 58 vs water 103 produces no edge). The cycler therefore uses a
+deliberately dark blue (gray ~20) that keeps hue ~114 and edges strongly.
 
 ## Technical Notes
 
 - ogre2 ignores the camera `<distortion>` block ("ImageBrownDistortionModel is not supported in ogre2") so the render is a clean pinhole. Run with `--no-undistort` - all launchers already do this.
 - Do not reboot the flight controller in place during a run - it breaks gz lockstep. Restart both processes together.
 - "ArduPilot controller has reset" a couple of times at startup is normal. A continuous loop is not.
-- Green buoys use a spring-green emissive (OpenCV hue ~81) to stay within the HSV detector's green range (75-99) without bleeding into blue (90-114).
+- Green buoys use a spring-green emissive (OpenCV hue ~81) to stay within the HSV detector's green range (75-105) without bleeding into blue (100-130).
 
 ---
 

@@ -1,0 +1,20 @@
+[INFO] ground truth: 7 buoys from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/robotx_uav_course.sdf
+       gate1_green    green  N=+1.25 E=+10.00
+       gate1_red      red    N=-1.25 E=+10.00
+       gate2_green    green  N=+1.25 E=+25.00
+       gate2_red      red    N=-1.25 E=+25.00
+       gate3_green    green  N=+1.25 E=+40.00
+       gate3_red      red    N=-1.25 E=+40.00
+       light_buoy     light  N=+0.00 E=+50.00
+Classes directory missing or empty: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/captures/classes
+Using fallback HSV ranges:
+Fallback HSV ranges:
+  red[0] low=(0, 100, 70) high=(10, 255, 255)
+  red[1] low=(170, 100, 70) high=(179, 255, 255)
+  green[0] low=(75, 60, 50) high=(105, 255, 255)
+  blue[0] low=(100, 80, 60) high=(130, 255, 255)
+[INFO] Loaded camera calibration from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/calibration/camera_intrinsics_latest.json (fx=1319.07, fy=1407.50, cx=870.93, cy=533.10, RMS=1.057px)
+[INFO] connecting telemetry on udp:127.0.0.1:14551 ...
+[INFO] telemetry connected.
+[INFO] intrinsics[calibration-file(no-undistort)] fx=1319.1
+[INFO] verifying... fly the course now. Ctrl-C to finish (or it auto-finishes on disarm).

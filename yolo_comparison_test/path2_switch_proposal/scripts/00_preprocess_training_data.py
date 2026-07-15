@@ -1,35 +1,51 @@
 #!/usr/bin/env python3
 """
-00_preprocess_training_data.py — Two-phase training data pre-processor.
+00_preprocess_training_data.py - Split-then-augment training data pre-processor.
 
 === Pipeline overview ===
 
   raw captures/
        │
-       ▼  Phase 1 — Geometric / environmental augmentation
+       ▼  Phase 0 - Raw-level train/val split  (leak-proof by construction)
+       │     • The RAW images are split train/val FIRST (--val-fraction, seeded,
+       │       recorded in split_manifest.txt) so an original and its own
+       │       augmented variants can never straddle the split. The old
+       │       behaviour - augment everything, split later - silently put
+       │       near-duplicates of training images into the "held-out" set,
+       │       which inflated validation numbers while the train/val loss gap
+       │       screamed overfit. Never re-split downstream of this script.
+       │
+       ▼  Phase 1 - Geometric / environmental augmentation  (each side separately)
        │     • Keep every original image unchanged.
-       │     • Generate --aug-per-image additional augmented variants per image.
+       │     • train/: --aug-per-image variants per image (default 4).
+       │     • val/:   --val-aug-per-image variants (default 0 - a pristine
+       │       val set is the defensible choice; robustness-under-noise is
+       │       measured separately by validation_step5_stress_test.py).
        │     • Augmentations simulate real UAV flight conditions:
        │         HorizontalFlip · Perspective (bank/pitch) · Affine (roll/zoom)
        │         HueSaturationValue (lighting shifts) · CoarseDropout (wave occlusion)
        │         RandomFog · GaussNoise · Spatter (weather / lens droplets)
        │
-       ▼  Phase 2 — Color normalisation  (applied to ALL images from Phase 1)
+       ▼  Phase 2 - Color normalisation  (applied to ALL images, both sides)
        │     • CLAHE on YUV luma channel → suppress glare and water reflections
        │     • Gray-World white balance  → correct blue/green water cast
        │     • Unsharp masking           → restore buoy edge sharpness
        │
        ▼
-  preprocessed_captures/    ← ready for 01_autolabel.py
+  preprocessed_captures/
+      ├── train/               ← originals + augmented variants
+      ├── val/                 ← held-out originals (never augmented by default)
+      ├── classes/             ← normalised HSV reference crops
+      └── split_manifest.txt   ← which raw file went where (defensibility)
 
 === Typical usage ===
 
   cd yolo_comparison_test/path2_switch_proposal/scripts
 
-  # Full pipeline (augment then normalise)
+  # Full pipeline (split, augment train, normalise everything)
   python 00_preprocess_training_data.py
 
-  # More augmentation variants
+  # More augmentation variants on the train side
   python 00_preprocess_training_data.py --aug-per-image 8
 
   # Custom dirs
@@ -57,7 +73,7 @@ import cv2
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# Albumentations — optional; Phase 1 requires it
+# Albumentations - optional; Phase 1 requires it
 # ---------------------------------------------------------------------------
 try:
     import albumentations as A
@@ -85,7 +101,7 @@ UNSHARP_STRENGTH = 0.8       # weight of the recovered detail layer
 
 
 # ===========================================================================
-# Phase 2 — Colour normalisation
+# Phase 2 - Colour normalisation
 # ===========================================================================
 
 def clahe_yuv(img_bgr: np.ndarray) -> np.ndarray:
@@ -137,7 +153,7 @@ def unsharp_mask(img_bgr: np.ndarray,
     Extracts a high-frequency detail residual and blends it back into the
     image at `strength`.  This recovers the distinct conical / spherical edges
     of buoys that are softened by atmospheric moisture, fog, or drone motion
-    blur — especially after CLAHE smoothing.
+    blur - especially after CLAHE smoothing.
     """
     blurred = cv2.GaussianBlur(img_bgr, (0, 0), sigma)
     sharpened = cv2.addWeighted(img_bgr, 1.0 + strength, blurred, -strength, 0)
@@ -153,7 +169,7 @@ def color_normalize(img_bgr: np.ndarray) -> np.ndarray:
 
 
 # ===========================================================================
-# Phase 1 — Geometric / environmental augmentation
+# Phase 1 - Geometric / environmental augmentation
 # ===========================================================================
 
 def _coarse_dropout(p: float) -> object:
@@ -202,16 +218,16 @@ def build_aug_pipeline() -> "A.Compose":
     Every transform is chosen to represent a physically realistic degradation
     a drone camera would experience during a maritime competition run:
 
-      HorizontalFlip       — free label-preserving doubling (buoys are radially
+      HorizontalFlip       - free label-preserving doubling (buoys are radially
                              symmetric from nadir; vertical flip excluded)
-      Perspective          — simulates UAV banking / off-nadir viewing angles
-      Affine               — roll, zoom, and small translations from wind gusts
-      HueSaturationValue   — noon vs overcast vs golden-hour lighting variation
-      CoarseDropout        — whitecap / sea-spray occlusion of the buoy body
-      GridDropout          — partial structural occlusion for robustness
-      RandomFog            — coastal fog and atmospheric haze
-      GaussNoise           — sensor noise at long distances
-      Spatter              — physical water droplets hitting the camera lens
+      Perspective          - simulates UAV banking / off-nadir viewing angles
+      Affine               - roll, zoom, and small translations from wind gusts
+      HueSaturationValue   - noon vs overcast vs golden-hour lighting variation
+      CoarseDropout        - whitecap / sea-spray occlusion of the buoy body
+      GridDropout          - partial structural occlusion for robustness
+      RandomFog            - coastal fog and atmospheric haze
+      GaussNoise           - sensor noise at long distances
+      Spatter              - physical water droplets hitting the camera lens
     """
     if not _ALB_OK:
         raise RuntimeError(
@@ -256,7 +272,7 @@ def build_aug_pipeline() -> "A.Compose":
                 val_shift_limit=35,
                 p=0.7,
             ),
-            # Wave / sea-spray occlusion — partial buoy visibility
+            # Wave / sea-spray occlusion - partial buoy visibility
             A.OneOf(
                 [
                     _coarse_dropout(p=1.0),
@@ -298,17 +314,58 @@ def save_jpg(img_bgr: np.ndarray, path: Path, quality: int = 95) -> None:
 # Main pipeline
 # ===========================================================================
 
+def split_raw_images(
+    images: list[Path],
+    val_fraction: float,
+    seed: int,
+) -> tuple[list[Path], list[Path]]:
+    """
+    Phase 0: split the RAW image list into (train, val) - before any
+    augmentation exists, so an original and its variants cannot straddle the
+    split. Deterministic for a given seed (sorted names, seeded shuffle).
+    """
+    ordered = sorted(images, key=lambda p: p.name)
+    rng = random.Random(seed)
+    rng.shuffle(ordered)
+    n_val = max(1, round(len(ordered) * val_fraction)) if ordered else 0
+    val = sorted(ordered[:n_val], key=lambda p: p.name)
+    train = sorted(ordered[n_val:], key=lambda p: p.name)
+    return train, val
+
+
+def write_split_manifest(
+    manifest_path: Path,
+    train: list[Path],
+    val: list[Path],
+    val_fraction: float,
+    seed: int,
+) -> None:
+    """Record exactly which raw file went to which side (defensibility: anyone
+    auditing the numbers can confirm no val original ever fed augmentation on
+    the train side)."""
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        f.write(f"# Raw-level train/val split (val_fraction={val_fraction}, seed={seed})\n")
+        f.write(f"# {len(train)} train / {len(val)} val raw images\n")
+        for p in train:
+            f.write(f"train\t{p.name}\n")
+        for p in val:
+            f.write(f"val\t{p.name}\n")
+
+
 def run_phase1_augment(
-    input_dir: Path,
+    images: list[Path],
     output_dir: Path,
     aug_per_image: int,
     seed: int,
     verbose: bool,
+    subset: str = "",
 ) -> list[Path]:
     """
-    Phase 1: geometric / environmental augmentation.
+    Phase 1: geometric / environmental augmentation over an explicit image
+    list (a train or val subset from Phase 0 - never a whole directory, so
+    the leak-proof split is preserved by construction).
 
-    For every raw image in *input_dir*:
+    For every image:
       • Copies the original unchanged into *output_dir*.
       • Writes *aug_per_image* augmented variants named
         ``<stem>_aug<N><ext>``.
@@ -318,20 +375,25 @@ def run_phase1_augment(
     random.seed(seed)
     np.random.seed(seed)
 
-    pipeline = build_aug_pipeline()
-    images = list_images(str(input_dir))
-    if not images:
-        print(f"[Phase 1] No images found in {input_dir}. Nothing to augment.")
-        return []
-
+    tag = f" [{subset}]" if subset else ""
     written: list[Path] = []
     n = len(images)
-    print(f"[Phase 1] Augmenting {n} image(s) × {aug_per_image} variants each …")
+    if not images:
+        print(f"[Phase 1]{tag} No images. Nothing to augment.")
+        return written
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if aug_per_image > 0:
+        pipeline = build_aug_pipeline()
+        print(f"[Phase 1]{tag} Augmenting {n} image(s) × {aug_per_image} variants each …")
+    else:
+        pipeline = None
+        print(f"[Phase 1]{tag} Copying {n} original(s), no augmented variants …")
 
     for i, src in enumerate(images, 1):
         img = cv2.imread(str(src))
         if img is None:
-            print(f"  [WARN] Cannot read {src.name} — skipped.")
+            print(f"  [WARN] Cannot read {src.name} - skipped.")
             continue
 
         # --- Keep original ---
@@ -351,10 +413,10 @@ def run_phase1_augment(
         if verbose:
             print(f"  [{i}/{n}] {src.name} → +{aug_per_image} variants")
 
-    orig_count = len(images)
+    orig_count = n
     aug_count = len(written) - orig_count
     print(
-        f"[Phase 1] Done. {orig_count} originals + {aug_count} augmented "
+        f"[Phase 1]{tag} Done. {orig_count} originals + {aug_count} augmented "
         f"= {len(written)} total images."
     )
     return written
@@ -375,7 +437,7 @@ def run_phase2_normalize(
     for i, path in enumerate(image_paths, 1):
         img = cv2.imread(str(path))
         if img is None:
-            print(f"  [WARN] Cannot read {path.name} — skipped.")
+            print(f"  [WARN] Cannot read {path.name} - skipped.")
             continue
         normalised = color_normalize(img)
         cv2.imwrite(str(path), normalised, [cv2.IMWRITE_JPEG_QUALITY, 95])
@@ -391,25 +453,34 @@ def copy_and_normalise_classes(
     verbose: bool,
 ) -> None:
     """
-    Copy the HSV reference crops from *src_classes* to *dst_classes* and
-    apply colour normalisation.
+    Copy the HSV reference crops from *src_classes* to *dst_classes* AS-IS,
+    deliberately WITHOUT colour normalisation.
 
-    We normalise the reference crops too so the HSV ranges that 01_autolabel.py
-    derives are computed from the same colour space as the training images.
+    This used to also run Phase 2 normalisation on the crops, on the theory
+    that 01_autolabel.py's derived HSV ranges should come from the same
+    colour space as the (normalised) training images. That reasoning breaks
+    down for these crops specifically: gray_world_wb() assumes a scene
+    averages to neutral gray, which is true-ish for a full capture but false
+    by construction for a reference crop that is mostly one saturated colour
+    -- normalising red.jpg measurably shifted its derived hue center from
+    red (~0) into green's range (~90), so autolabel's "red" mask silently
+    became a second green mask. Every "red" box in a dataset built this way
+    was confirmed (by direct HSV check) to sit on a real green object, and a
+    model trained on it faithfully learned to reproduce that mistake instead
+    of ever detecting real red. Reference crops must stay raw so the derived
+    hue centers reflect the object's real colour, not an artifact of a
+    normalisation step that only makes sense for full scenes.
     """
     if not src_classes.is_dir():
         return
     dst_classes.mkdir(parents=True, exist_ok=True)
-    crop_paths: list[Path] = []
+    n = 0
     for p in src_classes.iterdir():
         if p.is_file() and p.suffix.lower() in IMAGE_EXTS:
-            dst = dst_classes / p.name
-            shutil.copy2(p, dst)
-            crop_paths.append(dst)
-
-    if crop_paths:
-        print(f"[Classes] Copying and normalising {len(crop_paths)} reference crop(s) …")
-        run_phase2_normalize(crop_paths, verbose=verbose)
+            shutil.copy2(p, dst_classes / p.name)
+            n += 1
+    if n:
+        print(f"[Classes] Copied {n} reference crop(s), kept raw (not colour-normalised).")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -441,14 +512,32 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=4,
         metavar="N",
-        help="Number of augmented variants to generate per original image (default: 4)",
+        help="Augmented variants per original TRAIN image (default: 4)",
+    )
+    parser.add_argument(
+        "--val-aug-per-image",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Augmented variants per original VAL image (default: 0 - a "
+             "pristine val set is the defensible choice; noise robustness is "
+             "measured separately by validation_step5_stress_test.py)",
+    )
+    parser.add_argument(
+        "--val-fraction",
+        type=float,
+        default=0.2,
+        metavar="F",
+        help="Fraction of RAW images held out as val before augmentation "
+             "(default: 0.2). The split happens at the raw level so an "
+             "original and its augmented variants can never straddle it.",
     )
     parser.add_argument(
         "--seed",
         type=int,
         default=42,
         metavar="INT",
-        help="Random seed for reproducible augmentation (default: 42)",
+        help="Random seed for the split and augmentation (default: 42)",
     )
     parser.add_argument(
         "--skip-augment",
@@ -486,16 +575,38 @@ def main(argv: list[str] | None = None) -> int:
         copy_and_normalise_classes(src_classes, dst_classes, verbose=args.verbose)
 
     # -----------------------------------------------------------------------
-    # Phase 1 — Geometric / environmental augmentation
+    # Phase 0 - Raw-level train/val split (must precede ALL augmentation)
+    # -----------------------------------------------------------------------
+    raw_images = list_images(str(input_dir))
+    if not raw_images:
+        print(f"[ERROR] No images found in {input_dir}.", file=sys.stderr)
+        return 1
+    train_raw, val_raw = split_raw_images(raw_images, args.val_fraction, args.seed)
+    write_split_manifest(output_dir / "split_manifest.txt",
+                         train_raw, val_raw, args.val_fraction, args.seed)
+    print(f"[Phase 0] Raw split: {len(train_raw)} train / {len(val_raw)} val "
+          f"(val_fraction={args.val_fraction}, seed={args.seed}; "
+          f"see split_manifest.txt)")
+
+    train_dir = output_dir / "train"
+    val_dir = output_dir / "val"
+
+    # -----------------------------------------------------------------------
+    # Phase 1 - Geometric / environmental augmentation (per side, no crossing)
     # -----------------------------------------------------------------------
     if args.skip_augment:
         print("[Phase 1] Skipped (--skip-augment). Copying originals …")
-        images = list_images(str(input_dir))
-        for src in images:
-            shutil.copy2(src, output_dir / src.name)
-        processed_paths = [output_dir / p.name for p in images]
+        train_dir.mkdir(parents=True, exist_ok=True)
+        val_dir.mkdir(parents=True, exist_ok=True)
+        for src in train_raw:
+            shutil.copy2(src, train_dir / src.name)
+        for src in val_raw:
+            shutil.copy2(src, val_dir / src.name)
+        train_paths = [train_dir / p.name for p in train_raw]
+        val_paths = [val_dir / p.name for p in val_raw]
     else:
-        if not _ALB_OK:
+        needs_alb = args.aug_per_image > 0 or args.val_aug_per_image > 0
+        if needs_alb and not _ALB_OK:
             print(
                 "[ERROR] albumentations is required for Phase 1 but is not installed.\n"
                 "        Run:  pip install albumentations>=1.3\n"
@@ -503,32 +614,42 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        processed_paths = run_phase1_augment(
-            input_dir=input_dir,
-            output_dir=output_dir,
+        train_paths = run_phase1_augment(
+            images=train_raw,
+            output_dir=train_dir,
             aug_per_image=args.aug_per_image,
             seed=args.seed,
             verbose=args.verbose,
+            subset="train",
+        )
+        val_paths = run_phase1_augment(
+            images=val_raw,
+            output_dir=val_dir,
+            aug_per_image=args.val_aug_per_image,
+            seed=args.seed + 1,  # decorrelate from train-side augmentation
+            verbose=args.verbose,
+            subset="val",
         )
 
     # -----------------------------------------------------------------------
-    # Phase 2 — Colour normalisation
+    # Phase 2 - Colour normalisation (both sides: val must look like train
+    # because the SAME deterministic normalisation runs at inference time)
     # -----------------------------------------------------------------------
     if args.skip_normalize:
         print("[Phase 2] Skipped (--skip-normalize).")
     else:
-        run_phase2_normalize(processed_paths, verbose=args.verbose)
+        run_phase2_normalize(train_paths + val_paths, verbose=args.verbose)
 
     # -----------------------------------------------------------------------
     # Summary
     # -----------------------------------------------------------------------
-    total = len(processed_paths)
     print()
     print("=" * 60)
-    print(f"Pre-processing complete.")
+    print("Pre-processing complete.")
     print(f"  Input:   {input_dir}")
     print(f"  Output:  {output_dir}")
-    print(f"  Images:  {total} (ready for 01_autolabel.py)")
+    print(f"  Train:   {len(train_paths)} images ({len(train_raw)} originals)")
+    print(f"  Val:     {len(val_paths)} images ({len(val_raw)} originals, held out at raw level)")
     print()
     print("Next step:")
     print(f"  python 01_autolabel.py --captures-dir {output_dir}")

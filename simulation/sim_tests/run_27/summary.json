@@ -1,0 +1,86 @@
+{
+  "detector": "yolo",
+  "timestamp": "2026-07-11T22:46:30",
+  "duration_s": 49.0,
+  "duration_ok": true,
+  "n_detections": 550,
+  "colour_buoys_detected": 6,
+  "colour_buoys_total": 6,
+  "mean_error_m": 0.359,
+  "max_error_m": 2.433,
+  "mean_confidence": 0.961,
+  "unmatched_detections": 140,
+  "per_buoy": [
+    {
+      "name": "gate1_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 10.0,
+      "detections": 55,
+      "mean_error_m": 0.303,
+      "mean_confidence": 0.969
+    },
+    {
+      "name": "gate1_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 10.0,
+      "detections": 55,
+      "mean_error_m": 0.312,
+      "mean_confidence": 0.96
+    },
+    {
+      "name": "gate2_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 25.0,
+      "detections": 80,
+      "mean_error_m": 0.358,
+      "mean_confidence": 0.969
+    },
+    {
+      "name": "gate2_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 25.0,
+      "detections": 80,
+      "mean_error_m": 0.37,
+      "mean_confidence": 0.948
+    },
+    {
+      "name": "gate3_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 40.0,
+      "detections": 70,
+      "mean_error_m": 0.387,
+      "mean_confidence": 0.968
+    },
+    {
+      "name": "gate3_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 40.0,
+      "detections": 70,
+      "mean_error_m": 0.399,
+      "mean_confidence": 0.956
+    },
+    {
+      "name": "light_buoy",
+      "color": "light",
+      "true_north_m": 0.0,
+      "true_east_m": 50.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    }
+  ],
+  "files": {
+    "detections_csv": "detections_20260711_224627.csv",
+    "accuracy_report": "accuracy_report_20260711_224627.md"
+  },
+  "run": 27,
+  "course": 1,
+  "course_name": "Course 1: Straight Navigation Channel",
+  "mode": "headless"
+}

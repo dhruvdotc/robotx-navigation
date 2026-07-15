@@ -152,7 +152,14 @@
         <material><ambient>0.5 0.0 0.0 1</ambient><diffuse>0.8 0.0 0.0 1</diffuse><emissive>1.0 0.0 0.0 1</emissive></material>
       </visual></link></model>
 
-    <!-- Scan-the-code light buoy at far end of survey field -->
+    <!-- Scan-the-code light buoy at far end of survey field (this course is the
+         one explicitly modelled on the Scan the Code task, so the colour sequence
+         is the whole point). Panels are DARK: simulation/light_buoy_cycler.py
+         spawns/swaps an emissive glow-panel model on the buoy top at runtime
+         (red -> green -> blue) because gz-sim's visual_config material changes
+         never reach the SENSOR render scene (see robotx_uav_course.sdf for the
+         full story). led_top faces the nadir camera -- the side panel alone is
+         invisible from directly above. -->
     <model name="light_buoy"><static>true</static><pose>55 2 0.5 0 0 0</pose>
       <link name="link">
         <visual name="body">
@@ -162,7 +169,12 @@
         <visual name="led_face">
           <pose>0.251 0 0 0 0 0</pose>
           <geometry><box><size>0.01 0.35 0.35</size></box></geometry>
-          <material><ambient>0.4 0.0 0.0 1</ambient><diffuse>0.8 0.0 0.0 1</diffuse><emissive>1.0 0.1 0.1 1</emissive></material>
+          <material><ambient>0.08 0.08 0.08 1</ambient><diffuse>0.08 0.08 0.08 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+        </visual>
+        <visual name="led_top">
+          <pose>0 0 0.251 0 0 0</pose>
+          <geometry><box><size>0.35 0.35 0.01</size></box></geometry>
+          <material><ambient>0.08 0.08 0.08 1</ambient><diffuse>0.08 0.08 0.08 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
         </visual>
         <light name="pulse_led" type="point">
           <pose>0.3 0 0 0 0 0</pose>

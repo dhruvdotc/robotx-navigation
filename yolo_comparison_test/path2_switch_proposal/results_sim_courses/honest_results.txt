@@ -1,0 +1,50 @@
+=== HONEST VALIDATION RESULTS (sim-captured courses 1/2/3, red+green only) ===
+Val set size: 135 images (never seen during training; held out from the 675-image augmented pool)
+True Positives:  119
+False Positives: 15  (things detected that aren't buoys)
+False Negatives: 7  (buoys missed)
+Precision: 0.888
+Recall:    0.944
+F1 Score:  0.915
+mAP50 (ultralytics): 0.957
+
+Per class:
+  red: precision=0.875 recall=0.889 F1=0.882
+  green: precision=0.900 recall=1.000 F1=0.947
+  blue: precision=0.000 recall=0.000 F1=0.000  (zero training data -- sim has no blue buoys)
+
+Overfit check (train vs val loss gap): SEVERE OVERFIT flagged
+  Best epoch: 12, train loss 2.473, val loss 3.967, gap 1.494
+  NOTE: train/val split was performed on the 675-image AUGMENTED pool, not the
+  135 original raw frames -- an original frame and its own augmented variants
+  could land on opposite sides of the split. This is likely leaking correlated
+  (near-duplicate) samples between train/val, which may inflate mAP50 while
+  the loss-gap check (more sensitive to this) correctly flags the problem.
+  Fix: split BEFORE augmentation, on the raw captures, not after.
+
+Stress test (UAV noise simulation):
+  Clean val: detections=134 avg_conf=0.421 missed=64
+  Augmented val: detections=130 avg_conf=0.379 missed=65
+  Retention rate: 97.0%
+  NOTE: miss count here is much higher than validation_step3's FN=7, suggesting
+  this script uses a different/stricter confidence threshold or matching
+  criterion. Numbers are reported as produced, not reconciled between scripts.
+
+Comparison to existing balloon-photo baseline (results/honest_results.txt):
+  Balloon: mAP50=0.968 | P=0.944 | R=0.977 | F1=0.960 | stress retention=97.8%
+  Sim:     mAP50=0.957 | P=0.888 | R=0.944 | F1=0.915 | stress retention=97.0%
+  -> Sim-trained model is slightly WORSE on every honest metric, and is
+     substantially undertrained relative to the balloon baseline (early-stopped
+     at ~8-27 epochs here vs the balloon run's fuller training) and affected by
+     the train/val leakage issue above. Not a clean win as-is.
+
+Training notes:
+  - Full-dataset run (path2_training/balloon_finetune): early-stopped at epoch
+    27/100 (mAP50 plateaued at ~0.98 in-sample from epoch ~14 onward).
+  - Honest-split retrain (training/balloon_proper): early-stopped at epoch
+    ~8-12/50 (mAP50 plateaued ~0.93-0.95 on held-out val from epoch 2 onward).
+  - Both stopped early due to severe CPU contention on this dev machine
+    (WSL2, ~25 oversubscribed dataloader workers on 16 cores), not because
+    more training wouldn't have helped -- a clean run without contention
+    (e.g. on the user's separate machine) should be re-tried before drawing
+    final conclusions.

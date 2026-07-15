@@ -1,0 +1,5 @@
+path: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/yolo_comparison_test/path2_switch_proposal/scripts/dataset
+train: images/train
+val: images/val
+nc: 3
+names: ['red', 'green', 'blue']

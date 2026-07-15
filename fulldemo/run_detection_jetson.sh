@@ -1,5 +1,5 @@
 #!/bin/bash
-# Jetson detection pipeline — run ON Jetson (SSH babydragon@192.168.8.136)
+# Jetson detection pipeline - run ON Jetson (SSH babydragon@192.168.8.136)
 # Usage: GCS_IP=192.168.8.XXX bash fulldemo/run_detection_jetson.sh
 set -euo pipefail
 

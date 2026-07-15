@@ -1,4 +1,4 @@
-# Partner Instructions — RobotX Buoy Detection Demo
+# Partner Instructions - RobotX Buoy Detection Demo
 
 End-to-end guide for running the buoy detection pipeline: Jetson Orin Nano detects buoys via YOLO + HSV, laptop receives GPS + color over MAVLink.
 
@@ -7,14 +7,14 @@ End-to-end guide for running the buoy detection pipeline: Jetson Orin Nano detec
 ## Hardware Setup
 
 - **Network link (choose one):**
-  - **Option A — USB-C cable:** Jetson `192.168.55.1` ↔ laptop `192.168.55.100`
-  - **Option B — Router WiFi (recommended):** Jetson and laptop both join the same router SSID (e.g. `GL-AXT1800-*`) and use their router LAN IPs (e.g. `192.168.8.x`)
+  - **Option A - USB-C cable:** Jetson `192.168.55.1` ↔ laptop `192.168.55.100`
+  - **Option B - Router WiFi (recommended):** Jetson and laptop both join the same router SSID (e.g. `GL-AXT1800-*`) and use their router LAN IPs (e.g. `192.168.8.x`)
 - H264 camera connected to Jetson
 - `buoy_best.onnx` present at `~/robotx-navigation/buoy_best.onnx` on the Jetson
 
 ---
 
-## Step 1 — Assign USB Network on Laptop
+## Step 1 - Assign USB Network on Laptop
 
 After plugging in the USB-C cable, the Jetson appears as a USB ethernet device. You must assign it an IP:
 
@@ -48,7 +48,7 @@ sudo ifconfig enXX 192.168.55.100 netmask 255.255.255.0
 
 ---
 
-## Step 1B — Router WiFi Option (recommended)
+## Step 1B - Router WiFi Option (recommended)
 
 If you have a portable router, connect both laptop and Jetson to the router SSID.
 
@@ -69,7 +69,7 @@ Use the laptop’s router IP as `--gcs-ip` when running detection on the Jetson.
 
 ---
 
-## Step 2 — SSH into the Jetson
+## Step 2 - SSH into the Jetson
 
 ```bash
 ssh babydragon@192.168.55.1
@@ -78,12 +78,12 @@ ssh babydragon@192.168.55.1
 
 ---
 
-## Step 3 — Start the Ground Station (laptop)
+## Step 3 - Start the Ground Station (laptop)
 
 Open a **new terminal** on the laptop from the repo root:
 
 ```bash
-cd ~/Downloads/SP26/CSE237D/145-237D-robotx-navigation
+cd ~/Downloads/robotx-navigation
 bash fulldemo/run_gcs_mac.sh
 ```
 
@@ -107,7 +107,7 @@ Leave this running.
 
 ---
 
-## Step 4 — Start Detection on the Jetson
+## Step 4 - Start Detection on the Jetson
 
 In your SSH session:
 
@@ -135,16 +135,16 @@ GCS_IP=192.168.8.184 bash fulldemo/run_detection_jetson.sh
 ### What to look for
 
 **On the Jetson terminal:**
-- `YOLO loaded: buoy_best.onnx` — model ready
-- `MAVLink transmitter → udpout:192.168.55.100:14555` — link established
-- `[TX] t1 red lat=32.88012 lon=-117.23418` — live transmissions
+- `YOLO loaded: buoy_best.onnx` - model ready
+- `MAVLink transmitter → udpout:192.168.55.100:14555` - link established
+- `[TX] t1 red lat=32.88012 lon=-117.23418` - live transmissions
 
 **On the laptop ground station:**
 - `[GCS]` JSON lines confirm packets are arriving
 
 **If `[TX]` appears on Jetson but no `[GCS]` on laptop:**
 ```bash
-# On laptop — check USB network is still assigned
+# On laptop - check USB network is still assigned
 ifconfig en10
 # If no inet address, reassign:
 sudo ifconfig en10 192.168.55.100 netmask 255.255.255.0
@@ -158,7 +158,7 @@ python3 camera_live_feed.py ... --yolo-conf 0.15 --min-color-ratio 0.08
 
 ---
 
-## Step 5 — Visualize Received Coordinates
+## Step 5 - Visualize Received Coordinates
 
 ```bash
 # Static (after run)
@@ -170,7 +170,7 @@ python fulldemo/visualize_detections.py fulldemo/detections.jsonl --live
 
 ---
 
-## Step 6 — Retrieve Video from Jetson
+## Step 6 - Retrieve Video from Jetson
 
 The Jetson saves video to `~/robotx-navigation/detection_logs/recording_<unix_ts>.avi`.
 
@@ -178,7 +178,7 @@ Copy to laptop:
 
 ```bash
 rsync -av babydragon@192.168.55.1:~/robotx-navigation/detection_logs/ \
-  ~/Downloads/SP26/CSE237D/145-237D-robotx-navigation/fulldemo/session_data/
+  ~/Downloads/robotx-navigation/fulldemo/session_data/
 ```
 
 Cross-reference a detection with video:
@@ -195,7 +195,7 @@ ffmpeg -ss <offset_seconds> -i recording_<ts>.avi -frames:v 1 frame_at_detection
 |---|---|
 | `ping 192.168.55.1` fails | `sudo ifconfig en10 192.168.55.100 netmask 255.255.255.0` (adjust interface name) |
 | SSH refuses connection | Check ping first; Jetson may still be booting (~30s after power-on) |
-| Ground station shows nothing | Check `[TX]` on Jetson; if present, USB network IP dropped — reassign |
+| Ground station shows nothing | Check `[TX]` on Jetson; if present, USB network IP dropped - reassign |
 | Camera not found | Try `--camera-index 1` or `--camera-index 2` |
 | YOLO not loading | Confirm `buoy_best.onnx` exists: `ls ~/robotx-navigation/buoy_best.onnx` |
 | SSH drops mid-run | Pipeline keeps running on Jetson; re-SSH and check `detection_logs/` for saved video |
@@ -204,4 +204,4 @@ ffmpeg -ss <offset_seconds> -i recording_<ts>.avi -frames:v 1 frame_at_detection
 
 ## Wireless Option (future)
 
-When a USB WiFi dongle is available on the Jetson, the pipeline works identically — just replace `192.168.55.100` with the laptop's IP on the shared WiFi network. No code changes needed.
+When a USB WiFi dongle is available on the Jetson, the pipeline works identically - just replace `192.168.55.100` with the laptop's IP on the shared WiFi network. No code changes needed.

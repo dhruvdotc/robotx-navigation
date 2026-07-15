@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Option B: fresh clean repo on dhruvdotc (no Cursor co-author — run in Terminal.app)
+# Option B: fresh clean repo on dhruvdotc (no Cursor co-author - run in Terminal.app)
 set -euo pipefail
 
 REPO_NAME="${REPO_NAME:-robotx-navigation}"
@@ -13,7 +13,7 @@ if gh repo view "dhruvdotc/${REPO_NAME}" >/dev/null 2>&1; then
   echo "Repo dhruvdotc/${REPO_NAME} already exists on GitHub."
 else
   gh repo create "$REPO_NAME" --public \
-    --description "RobotX aerial buoy detection + MAVLink GCS — clean team repo"
+    --description "RobotX aerial buoy detection + MAVLink GCS - clean team repo"
 fi
 
 if [[ -d "$DST/.git" ]]; then
@@ -92,7 +92,7 @@ cat > README.md <<'EOF'
 
 Clean team repo for **live buoy detection** (Jetson) → **MAVLink UDP** → **Mac ground station**.
 
-Forked from [saxysteph/145-237D-robotx-navigation](https://github.com/saxysteph/145-237D-robotx-navigation) (UCSD CSE 237D / RobotX 2026).
+Forked from [saxysteph/145-237D-robotx-navigation](https://github.com/saxysteph/145-237D-robotx-navigation) (RobotX 2026).
 
 ## Quick start
 
@@ -123,7 +123,7 @@ See `fulldemo/README.md` and `fulldemo/PARTNER_INSTRUCTIONS.md` for WiFi router 
 
 ## Weights
 
-Runtime prefers (in order): `buoy_best.onnx`, Roboflow `.onnx`, Roboflow `.pt` — see `fulldemo/run_detection_jetson.sh`.
+Runtime prefers (in order): `buoy_best.onnx`, Roboflow `.onnx`, Roboflow `.pt` - see `fulldemo/run_detection_jetson.sh`.
 EOF
 
 cat > TEAM_SETUP.md <<'EOF'

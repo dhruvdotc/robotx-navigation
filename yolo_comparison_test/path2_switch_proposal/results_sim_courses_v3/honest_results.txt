@@ -1,0 +1,55 @@
+=== HONEST VALIDATION RESULTS (v3 - retrained after red-detection root-cause fix) ===
+
+Context: results_sim_courses_v2's checked-in honest_split_best.pt claimed
+red precision=0.892 recall=0.943 in its honest_results.txt, but did not
+actually detect real red buoys at all when independently reproduced: direct
+TP/FP/FN measurement against the same val split's ground truth gave
+red TP=0 FP=38 FN=36 (precision 0.000, recall 0.000). Every "red" prediction
+that model ever made, across all 325 raw captures, was confirmed (by direct
+HSV pixel check of each predicted box) to be a phantom duplicate on a
+green or other-colored object, never a real red detection. Ground truth
+was independently confirmed clean (all 141 red labels genuinely red-hued,
+median hue 0.0). This was a genuine model training failure, not a data or
+labeling problem.
+
+Fix: re-ran the full honest pipeline from scratch (00_preprocess_training_data.py
+-> 01_autolabel.py -> validation_step1_proper_split.py -> validation_step2_retrain.py,
+same settings: YOLOv11n, 100 epoch ceiling, patience 15, same raw split
+reproduced exactly - 260 train / 65 val, seed 42). This run completed the
+full 100 epochs (fitness kept improving; patience never triggered).
+
+=== INDEPENDENT VERIFICATION (own script, not the training run's self-report) ===
+Direct TP/FP/FN reproduction against the real held-out val set (65 images,
+82 boxes), same greedy IoU>0.5 matching methodology as validation_step3:
+
+  red:   TP=35 FP=4 FN=0   precision=0.897 recall=1.000 F1=0.945
+  green: TP=36 FP=1 FN=0   precision=0.973 recall=1.000 F1=0.986
+  blue:  TP=11 FP=0 FN=0   precision=1.000 recall=1.000 F1=1.000
+  all:   TP=82 FP=5 FN=0   precision=0.943 recall=1.000 F1=0.971
+
+Red went from a confirmed, complete, verified failure (0/36 real red boxes
+ever matched) to working detection (35/35 real red boxes matched, recall
+1.000) on the exact same images and ground truth. This is a real,
+independently-verified fix, not a re-run of the same broken process.
+
+=== Ultralytics' own end-of-training validation (for reference only -- a
+different methodology than the TP/FP/FN reproduction above; do not treat
+this alone as sufficient verification, see the note at the top of this file) ===
+  red:   precision=0.963 recall=0.971 mAP50=0.990 mAP50-95=0.784
+  green: precision=0.975 recall=1.000 mAP50=0.995 mAP50-95=0.995
+  blue:  precision=0.954 recall=1.000 mAP50=0.995 mAP50-95=0.995
+  Best mAP50 on HELD-OUT val set: 0.995
+
+=== A mitigation that is NO LONGER needed or used ===
+While diagnosing the original red failure, camera_live_feed.py's
+find_detections_yolo() was temporarily given agnostic_nms=True plus an
+HSV-crop color-verification/correction pass, to work around the OLD
+model's phantom-red-on-green hallucination. Re-tested against this NEW,
+properly-trained model: both mitigations made things WORSE (agnostic_nms
+alone dropped red recall 1.0 -> 0.40; adding the color correction dropped
+it to 0.0, by misclassifying genuine tight red boxes as green whenever the
+crop included background). Both were reverted; find_detections_yolo() is
+back to plain raw model output, which is what these verified numbers
+reflect. Root-causing and retraining fixed the real problem; the
+mitigation was a band-aid for the old, broken model specifically and is
+actively wrong for this one.

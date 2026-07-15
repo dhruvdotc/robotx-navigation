@@ -1,0 +1,79 @@
+RiTW: Starting ArduCopter : /home/dhruv/ardupilot/build/sitl/bin/arducopter --model JSON --speedup 1 --slave 0 --sim-address=127.0.0.1 -I0
+RiTW: Window access not found, logging to /tmp/ArduCopter.log
+Connect tcp:127.0.0.1:5760 source_system=255
+Log Directory: 
+Telemetry log: mav.tlog
+Waiting for heartbeat from tcp:127.0.0.1:5760
+AP: RCInput: decoding UDP (Pulses)
+AP: Calibrating barometer
+Detected vehicle 1:1 on link 0
+online system 1
+STABILIZE> Mode STABILIZE
+AP: ArduCopter V4.8.0-dev (05b13dfe)
+AP: 25460fc03639440aa3b0c888a654df12
+AP: Frame: QUAD/X
+Received 1363 parameters (ftp)
+Saved 1363 parameters to mav.parm
+AP: Barometer 1 calibration complete
+AP: Barometer 2 calibration complete
+AP: ArduPilot Ready
+AP: Field Elevation Set: 584m
+AP: EKF3 IMU0 initialised
+AP: EKF3 IMU1 initialised
+AP: EKF3 IMU0 tilt alignment complete
+AP: EKF3 IMU1 tilt alignment complete
+AP: EKF3 IMU1 MAG0 initial yaw alignment complete
+AP: EKF3 IMU0 MAG0 initial yaw alignment complete
+AP: GPS 1: probing for u-blox at 230400 baud
+AP: GPS 1: detected u-blox
+fence present
+AP: EKF3 IMU1 origin set
+AP: EKF3 IMU0 origin set
+GUIDED> Mode GUIDED
+Got COMMAND_ACK: COMPONENT_ARM_DISARM: ACCEPTED
+AP: Arming motors
+Got COMMAND_ACK: NAV_TAKEOFF: ACCEPTED
+ARMED
+Arming checks disabled
+AP: EKF3 IMU1 MAG0 in-flight yaw alignment complete
+AP: EKF3 IMU0 MAG0 in-flight yaw alignment complete
+height 15
+AP: EKF3 IMU0 is using GPS
+AP: EKF3 IMU1 is using GPS
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+Warning, time moved backwards. Restarting timer.
+LAND> Mode LAND

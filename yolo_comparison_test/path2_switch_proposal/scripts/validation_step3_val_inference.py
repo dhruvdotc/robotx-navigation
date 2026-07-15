@@ -108,8 +108,9 @@ def main() -> int:
     weights = os.path.join(root, "training", "balloon_proper", "weights", "best.pt")
     dataset_yaml_abs = os.path.join(root, "dataset", "dataset_abs.yaml")
     if not os.path.isfile(dataset_yaml_abs):
+        dataset_dir_posix = os.path.join(root, "dataset").replace("\\", "/")
         with open(dataset_yaml_abs, "w", encoding="utf-8") as f:
-            f.write(f"path: {os.path.join(root, 'dataset').replace('\\', '/')}\n")
+            f.write(f"path: {dataset_dir_posix}\n")
             f.write("train: images/train\n")
             f.write("val: images/val\n")
             f.write("nc: 3\n")

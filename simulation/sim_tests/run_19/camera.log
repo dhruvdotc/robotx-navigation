@@ -1,0 +1,19 @@
+/home/dhruv/.local/lib/python3.10/site-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+Classes directory missing or empty: captures/classes
+Using fallback HSV ranges:
+Fallback HSV ranges:
+  red[0] low=(0, 100, 70) high=(10, 255, 255)
+  red[1] low=(170, 100, 70) high=(179, 255, 255)
+  green[0] low=(75, 60, 50) high=(105, 255, 255)
+  blue[0] low=(100, 80, 60) high=(130, 255, 255)
+[INFO] Loaded camera calibration from calibration/camera_intrinsics_latest.json (fx=1319.07, fy=1407.50, cx=870.93, cy=533.10, RMS=1.057px)
+[INFO] Active intrinsics [calibration-file(no-undistort)]: fx=1319.07 fy=1407.50 cx=870.93 cy=533.10 dist=[0.0, 0.0, 0.0, 0.0, 0.0]
+[INFO] Loading YOLO model: yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/weights/honest_split_best.pt
+Traceback (most recent call last):
+  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/camera_live_feed.py", line 828, in <module>
+    sys.exit(main())
+  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/camera_live_feed.py", line 695, in main
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+cv2.error: OpenCV(5.0.0) /io/opencv/modules/highgui/src/window.cpp:1200: error: (-2:Unspecified error) The function is not implemented. Rebuild the library with Windows, GTK+ 2.x or Cocoa support. If you are on Ubuntu or Debian, install libgtk2.0-dev and pkg-config, then re-run cmake or configure script in function 'namedWindowImpl'
+

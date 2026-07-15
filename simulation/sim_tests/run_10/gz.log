@@ -1,0 +1,143 @@
+[1;32m[Msg] [0m[1;32mGazebo Sim Server v[0m[1;32m8.11.0[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mLoading SDF world file[[0m[1;32m/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/robotx_uav_course.sdf[0m[1;32m].[0m
+[1;33mWarning [Utils.cc:132][0m [/sdf/world[@name="robotx_uav_course"]/model[@name="light_buoy"]/light[@name="pulse_led"]:/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/robotx_uav_course.sdf:L232]: XML Element[light], child of element[model], not defined in SDF. Copying[light] as children of [model].
+[1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="iris_with_standoffs"]/link[@name="imu_link"]/sensor[@name="imu_sensor"]/gz_frame_id:/home/dhruv/ardupilot_gazebo/models/iris_with_standoffs/model.sdf:L250]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gimbal_nadir"]/link[@name="base_link"]/sensor[@name="camera"]/gz_frame_id:/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/models/gimbal_nadir/model.sdf:L63]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[1;32m[Msg] [0m[1;32mServing entity system service on [[0m[1;32m/[0m[1;32mentity/system/add[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mCreate[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/create_multiple[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mCreate[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/create_multiple/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mRemove[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/remove[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mRemove[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/remove/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_pose[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_pose/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_pose_vector[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_pose_vector/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mLight configuration[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/light_config[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mLight configuration[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/light_config/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mPhysics[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_physics[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mPhysics[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_physics/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mSphericalCoordinates[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_spherical_coordinates[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mSphericalCoordinates[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/set_spherical_coordinates/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mEnable collision[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/enable_collision[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mEnable collision[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/enable_collision/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mDisable collision[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/disable_collision[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mDisable collision[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/disable_collision/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/visual_config[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/visual_config/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/wheel_slip[0m[1;32m] (async)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/robotx_uav_course/wheel_slip/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mApplyJointForce subscribing to Double messages on [[0m[1;32m/model/uav/joint/iris_with_standoffs::rotor_0_joint/cmd_force[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mApplyJointForce subscribing to Double messages on [[0m[1;32m/model/uav/joint/iris_with_standoffs::rotor_1_joint/cmd_force[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mApplyJointForce subscribing to Double messages on [[0m[1;32m/model/uav/joint/iris_with_standoffs::rotor_2_joint/cmd_force[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mApplyJointForce subscribing to Double messages on [[0m[1;32m/model/uav/joint/iris_with_standoffs::rotor_3_joint/cmd_force[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mLoaded level [[0m[1;32mdefault[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mServing world controls on [[0m[1;32m/world/robotx_uav_course[0m[1;32m/control], [[0m[1;32m/world/robotx_uav_course[0m[1;32m/control/state] and [[0m[1;32m/world/robotx_uav_course[0m[1;32m/playback/control][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mServing GUI information on [[0m[1;32m/world/robotx_uav_course[0m[1;32m/[0m[1;32mgui/info[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mWorld [[0m[1;32mrobotx_uav_course[0m[1;32m] initialized with [[0m[1;32m1ms[0m[1;32m] physics profile.[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mServing world SDF generation service on [[0m[1;32m/world/robotx_uav_course[0m[1;32m/[0m[1;32mgenerate_world_sdf[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mServing world names on [[0m[1;32m/gazebo/worlds[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mResource path add service on [[0m[1;32m/gazebo/resource_paths/add[0m[1;32m].[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mResource path get service on [[0m[1;32m/gazebo/resource_paths/get[0m[1;32m].[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mResource path resolve service on [[0m[1;32m/gazebo/resource_paths/resolve[0m[1;32m].[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mResource paths published on [[0m[1;32m/gazebo/resource_paths[0m[1;32m].[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mServer control service on [[0m[1;32m/server_control[0m[1;32m].[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mFound no publishers on /stats, adding root stats topic[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mFound no publishers on /clock, adding root clock topic[0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mFound IMU sensor with name [[0m[1;32miris_with_standoffs::imu_link::imu_sensor[0m[1;32m][0m
+[1;32mMsg[0m [NameManager::issueNewName] (Skeleton::BodyNode | uav::iris_with_standoffs) The name [base_link] is a duplicate, so it has been renamed to [base_link(1)]
+[1;32m[Msg] [0m[1;32mLoading plugin [[0m[1;32mgz-rendering-ogre2[0m[1;32m][0m[1;32m[0m
+[1;32m[Msg] [0m[1;32mServing scene information Dropped Escape call with ulEscapeCode : 0x03007703
+Dropped Escape call with ulEscapeCode : 0x03007703
+[1;33m[Wrn] [Ogre2Camera.cc:423] [0m[1;33mOgre2Camera::SetVisibilityMask: Mask bits [0m[1;33mc0000000[0m[1;33m are set but will be ignored as they conflict with the [0m[1;33mreserved bits used internally by the ogre2 backend.[0m[1;33m[0m
+[1;33m[Wrn] [RenderPassSystem.cc:54] [0m[1;33mRenderPass of typeid '[0m[1;33mN2gz9rendering2v814DistortionPassE[0m[1;33m' is not registered[0m[1;33m[0m
+[1;33m[Wrn] [ImageBrownDistortionModel.cc:112] [0m[1;33mImageBrownDistortionModel is not supported in [0m[1;33mogre2[0m[1;33m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;33m[Wrn] [ArduPilotPlugin.cc:1599] [0m[1;33mArduPilot controller has reset[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;33m[Wrn] [ArduPilotPlugin.cc:1599] [0m[1;33mArduPilot controller has reset[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1652] [0m[1;31mFailed to find visual entity[0m[1;31m[0m
+[1;31m[Err] [UserCommands.cc:1249] [0m[1;31mFailed to find light with name [[0m[1;31mlight_buoy::link::pulse_led[0m[1;31m], ID [[0m[1;31m0[0m[1;31m] and parent ID [[0m[1;31m0[0m[1;31m].[0m[1;31m[0m

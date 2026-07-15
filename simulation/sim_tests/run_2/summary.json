@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-07-10T20:16:28",
+  "duration_s": 100.0,
+  "duration_ok": true,
+  "n_detections": 0,
+  "colour_buoys_detected": 0,
+  "colour_buoys_total": 6,
+  "mean_error_m": null,
+  "max_error_m": null,
+  "mean_confidence": null,
+  "unmatched_detections": 0,
+  "per_buoy": [
+    {
+      "name": "green1",
+      "color": "green",
+      "true_north_m": 10.0,
+      "true_east_m": 8.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "green2",
+      "color": "green",
+      "true_north_m": -8.0,
+      "true_east_m": 24.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "green3",
+      "color": "green",
+      "true_north_m": 7.0,
+      "true_east_m": 42.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "red1",
+      "color": "red",
+      "true_north_m": -11.0,
+      "true_east_m": 14.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "red2",
+      "color": "red",
+      "true_north_m": 6.0,
+      "true_east_m": 31.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "red3",
+      "color": "red",
+      "true_north_m": -5.0,
+      "true_east_m": 48.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "light_buoy",
+      "color": "light",
+      "true_north_m": 2.0,
+      "true_east_m": 55.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    }
+  ],
+  "files": {
+    "detections_csv": "detections_20260710_201626.csv",
+    "accuracy_report": "accuracy_report_20260710_201626.md"
+  },
+  "run": 2,
+  "course": 2,
+  "course_name": "Course 2: Open Water Survey (Lawnmower)",
+  "mode": "headless"
+}

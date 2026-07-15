@@ -1,0 +1,77 @@
+/home/dhruv/.local/lib/python3.10/site-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] ground truth: 7 buoys from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/course_2_search_field.sdf
+       green1         green  N=+10.00 E=+8.00
+       green2         green  N=-8.00 E=+24.00
+       green3         green  N=+7.00 E=+42.00
+       red1           red    N=-11.00 E=+14.00
+       red2           red    N=+6.00 E=+31.00
+       red3           red    N=-5.00 E=+48.00
+       light_buoy     light  N=+2.00 E=+55.00
+[INFO] Loading YOLO model: yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/weights/honest_split_best.pt
+[INFO] Loaded camera calibration from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/calibration/camera_intrinsics_latest.json (fx=1319.07, fy=1407.50, cx=870.93, cy=533.10, RMS=1.057px)
+[INFO] connecting telemetry on udp:127.0.0.1:14553 ...
+[INFO] telemetry connected.
+[INFO] intrinsics[calibration-file(no-undistort)] fx=1319.1
+[INFO] verifying... fly the course now. Ctrl-C to finish (or it auto-finishes on disarm).
+[INFO] flight detected (armed) -- logging started.
+[LOG] blue  conf=0.94 est NED=N+1.76 E+54.26 (alt 10.0m, roll+0.2 pitch+0.8)
+[LOG] blue  conf=0.93 est NED=N+1.79 E+54.31 (alt 10.0m, roll+0.2 pitch+0.8)
+[LOG] blue  conf=0.93 est NED=N+1.84 E+54.38 (alt 10.0m, roll+0.1 pitch-0.2)
+[LOG] blue  conf=0.93 est NED=N+1.88 E+54.44 (alt 10.0m, roll+0.1 pitch-0.2)
+[LOG] blue  conf=0.93 est NED=N+1.88 E+54.49 (alt 10.0m, roll-0.3 pitch-0.6)
+[LOG] blue  conf=0.93 est NED=N+1.85 E+54.53 (alt 10.0m, roll-0.3 pitch-0.6)
+[LOG] blue  conf=0.95 est NED=N+1.81 E+54.57 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] blue  conf=0.92 est NED=N+1.80 E+54.59 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] blue  conf=0.94 est NED=N+1.83 E+54.61 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] blue  conf=0.94 est NED=N+1.85 E+54.62 (alt 10.0m, roll-0.3 pitch-0.4)
+[LOG] blue  conf=0.92 est NED=N+1.85 E+54.62 (alt 10.0m, roll-0.3 pitch-0.4)
+[LOG] blue  conf=0.90 est NED=N+1.82 E+54.65 (alt 10.0m, roll+0.2 pitch-0.1)
+[LOG] blue  conf=0.93 est NED=N+1.79 E+54.64 (alt 10.0m, roll+0.2 pitch-0.1)
+[LOG] blue  conf=0.91 est NED=N+1.80 E+54.64 (alt 10.0m, roll-0.1 pitch+0.1)
+[LOG] blue  conf=0.92 est NED=N+1.82 E+54.62 (alt 10.0m, roll-0.1 pitch+0.1)
+[LOG] blue  conf=0.92 est NED=N+1.82 E+54.59 (alt 10.0m, roll-0.1 pitch+0.1)
+[LOG] blue  conf=0.93 est NED=N+1.81 E+54.57 (alt 10.0m, roll-0.1 pitch+0.4)
+[LOG] blue  conf=0.94 est NED=N+1.80 E+54.53 (alt 10.0m, roll-0.1 pitch+0.4)
+[LOG] blue  conf=0.92 est NED=N+1.84 E+54.48 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] blue  conf=0.92 est NED=N+1.84 E+54.44 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] blue  conf=0.94 est NED=N+1.81 E+54.40 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] blue  conf=0.95 est NED=N+1.83 E+54.38 (alt 10.0m, roll-0.3 pitch+0.5)
+[LOG] blue  conf=0.94 est NED=N+1.86 E+54.33 (alt 10.0m, roll-0.3 pitch+0.5)
+
+# RobotX UAV Course - Accuracy Verification Report
+
+- **Flight / recording timestamp:** 2026-07-11 20:37:11
+- **Flight duration:** 276.7 s (OK; minimum 15 s)
+- **Detector:** yolo
+- **World (ground truth):** `simulation/gazebo/worlds/course_2_search_field.sdf`
+- **Detection log:** `simulation/sim_tests/run_23/detections_20260711_203706.csv`
+- **Datum:** lat -35.363262, lon 149.165237
+
+## Summary
+
+- Total logged detections: **23**
+- Colour buoys detected: **0 / 6**
+- Mean horizontal error: **nan m**
+- Max horizontal error: **nan m**
+- Mean detection confidence: **nan**
+- Unmatched detections (no buoy within 3.0 m): **23**
+
+## Per-buoy accuracy
+
+| Buoy | Colour | True N,E (m) | Detections | Mean err (m) | Max err (m) | Mean conf |
+|------|--------|--------------|-----------:|-------------:|------------:|----------:|
+| green1 | green | 10.00, 8.00 | 0 | - | - | - |
+| green2 | green | -8.00, 24.00 | 0 | - | - | - |
+| green3 | green | 7.00, 42.00 | 0 | - | - | - |
+| red1 | red | -11.00, 14.00 | 0 | - | - | - |
+| red2 | red | 6.00, 31.00 | 0 | - | - | - |
+| red3 | red | -5.00, 48.00 | 0 | - | - | - |
+| light_buoy | light | 2.00, 55.00 | 0 | - | - | - (nadir: black box, no colour - expected miss) |
+
+_Each detection is matched to the nearest same-colour ground-truth buoy within the match radius; error is the horizontal distance between the projected absolute position and the buoy's true position._
+
+[INFO] report written: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_23/accuracy_report_20260711_203706.md
+[INFO] latest report : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_23/accuracy_report.md
+[INFO] detection log : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_23/detections_20260711_203706.csv
+[INFO] summary json  : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_23/summary.json

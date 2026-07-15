@@ -1,0 +1,26 @@
+[CYCLER 20:34:58] cycling light_buoy glow panel in world 'robotx_uav_course' at (50.0 0.0 0.76) every 3.0s (sequence: red -> green -> blue)
+[CYCLER 20:34:58] light_buoy -> red
+[CYCLER 20:35:01] light_buoy -> green
+[CYCLER 20:35:05] light_buoy -> blue
+[CYCLER 20:35:09] light_buoy -> red
+[CYCLER 20:35:12] light_buoy -> green
+[CYCLER 20:35:15] light_buoy -> blue
+[CYCLER 20:35:19] light_buoy -> red
+[CYCLER 20:35:23] light_buoy -> green
+[CYCLER 20:35:26] light_buoy -> blue
+[CYCLER 20:35:30] light_buoy -> red
+[CYCLER 20:35:33] light_buoy -> green
+[CYCLER 20:35:37] light_buoy -> blue
+[CYCLER 20:35:40] light_buoy -> red
+[CYCLER 20:35:44] light_buoy -> green
+[CYCLER 20:35:48] light_buoy -> blue
+[CYCLER 20:35:51] light_buoy -> red
+[CYCLER 20:35:55] light_buoy -> green
+[CYCLER 20:35:58] light_buoy -> blue
+[CYCLER 20:36:02] light_buoy -> red
+[CYCLER 20:36:06] light_buoy -> green
+[CYCLER 20:36:09] light_buoy -> blue
+[CYCLER 20:36:13] light_buoy -> red
+[CYCLER 20:36:16] light_buoy -> green
+[CYCLER 20:36:20] light_buoy -> blue
+[CYCLER 20:36:23] light_buoy -> red

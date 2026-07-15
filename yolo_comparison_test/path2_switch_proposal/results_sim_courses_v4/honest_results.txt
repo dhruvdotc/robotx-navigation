@@ -1,0 +1,76 @@
+=== HONEST VALIDATION RESULTS (v4 - TRUE root-cause fix, fully verified) ===
+
+The full story, so nothing here gets trusted blindly again:
+
+1. v2's checked-in model claimed red precision=0.892 recall=0.943. Direct
+   independent reproduction found red TP=0 FP=38 FN=36 (0.000/0.000) -
+   every "red" prediction was a phantom duplicate on a green object, never
+   a real detection.
+
+2. v3 retrained the model and appeared to fix it (TP=35 FN=0). This was
+   ALSO false. The retraining used preprocessed_captures/classes/red.jpg as
+   the HSV reference crop for auto-labeling, but that crop had been run
+   through Phase-2 colour normalisation (CLAHE + gray-world white balance +
+   unsharp mask) meant for full scenes. Gray-world white balance assumes a
+   scene averages to neutral gray; applied to a crop that is almost
+   entirely one saturated colour, it wildly overcorrects. Measured directly:
+   the derived "red" hue center shifted from ~0 (correct) to ~90 (green's
+   territory). Every "red" ground-truth box in the dataset used to train
+   and validate v3 was confirmed, by direct HSV check, to be green-hued
+   (median hue 80) and co-located with a real green box. v3's "recall 1.0"
+   was measuring agreement with corrupted ground truth, not real detection.
+
+3. Fixing #2 (keeping reference crops raw) uncovered a second, related bug:
+   blue's autolabel count collapsed from 174 to 6. Cause: derive_class_hsv_ranges()
+   used max(sat_floor, crop's own 15th percentile) for the saturation/value
+   floor. A near-solid reference crop has a very high, narrow percentile
+   (blue.jpg: sat~246, val~200), which becomes a brittle hard floor -
+   real in-scene blue pixels that don't happen to hit that exact ceiling
+   get silently excluded. Fixed by using the caller's floor (50/45) directly.
+
+4. With BOTH fixes applied, ground truth was independently verified clean
+   BEFORE spending GPU time retraining: all 47 red / 36 green / 11 blue
+   val ground-truth boxes are genuinely hue-correct, zero cross-class
+   co-location.
+
+=== v4 training ===
+Same settings as v2/v3: YOLOv11n, 100 epoch ceiling, patience 15, same raw
+split reproduced exactly (260 train/65 val, seed 42). This run early-stopped
+at epoch 72 (best checkpoint at epoch 57 - fitness stopped improving for 15
+epochs after that, which is the mechanism working as intended, not a
+problem).
+
+=== INDEPENDENT VERIFICATION (own script, not the training run's self-report) ===
+
+Direct TP/FP/FN reproduction against the real held-out val set (65 images,
+94 boxes), same greedy IoU>0.5 matching methodology as validation_step3:
+
+  red:   TP=47 FP=6 FN=0   precision=0.887 recall=1.000
+  green: TP=36 FP=2 FN=0   precision=0.947 recall=1.000
+  blue:  TP=11 FP=0 FN=0   precision=1.000 recall=1.000
+
+This time, ALSO checked every single predicted box's OWN cropped pixels for
+genuine hue-correctness, not just whether it matched a (now confirmed-clean)
+ground truth box - the check that would have caught v3's problem immediately:
+
+  red:   53/53 predicted boxes are genuinely red-hued
+  green: 38/38 predicted boxes are genuinely green-hued
+  blue:  11/11 predicted boxes are genuinely blue-hued
+
+Zero hallucination anywhere. This is a real, verified fix.
+
+=== Ultralytics' own end-of-training validation (for reference only) ===
+  red:   precision=0.961 recall=0.979 mAP50=0.993 mAP50-95=0.979
+  green: precision=0.996 recall=1.000 mAP50=0.995 mAP50-95=0.990
+  blue:  precision=0.973 recall=1.000 mAP50=0.995 mAP50-95=0.995
+  Best mAP50 on HELD-OUT val set: 0.995
+
+=== Lesson for future verification ===
+TP/FP/FN matching against ground truth is only as honest as the ground
+truth itself. Before trusting any TP/FP/FN number as "the model works,"
+independently check that (a) the ground truth boxes being matched against
+are genuinely correct (not just internally consistent), and (b) the
+model's own predicted boxes contain the pixel evidence they claim to.
+Both checks are cheap (a median-hue check per box) and would have caught
+both v2's and v3's failures immediately instead of after a live course-sim
+still showed the same systematic error.

@@ -1,6 +1,6 @@
-# RobotX Navigation — Docs Index
+# RobotX Navigation - Docs Index
 
-> **Goal:** Full end-to-end pipeline for UAV buoy detection at RobotX — capture → annotate → train → deploy → test — reproducible from scratch on competition day.
+> **Goal:** Full end-to-end pipeline for UAV buoy detection at RobotX - capture → annotate → train → deploy → test - reproducible from scratch on competition day.
 
 ---
 
@@ -12,11 +12,11 @@
 | [02_data_pipeline.md](02_data_pipeline.md) | Capture → augment → batch-detect → metrics |
 | [03_detection_algorithm.md](03_detection_algorithm.md) | Two-stage CV pipeline (HSV): how it works |
 | [04_gps_projection.md](04_gps_projection.md) | Pixel → NED → lat/lon math and calibration |
-| [05_simulation.md](05_simulation.md) | Gazebo SITL — running all 3 courses |
+| [05_simulation.md](05_simulation.md) | Gazebo SITL - running all 3 courses |
 | [06_real_flight.md](06_real_flight.md) | Full demo: Jetson detection + Mac ground station |
 | [07_roadmap.md](07_roadmap.md) | Progress tracking + outstanding TODOs |
 | [08_annotation_and_training.md](08_annotation_and_training.md) | Auto-label → fine-tune YOLO → validate → deploy best.pt |
-| [09_competition_day.md](09_competition_day.md) | Competition day cheat sheet — full sequence start to finish |
+| [09_competition_day.md](09_competition_day.md) | Competition day cheat sheet - full sequence start to finish |
 
 ---
 
@@ -30,16 +30,18 @@ bash simulation/run_course.sh --course 1 --visual # 4-window GUI
 
 ### Real flight (field)
 ```bash
-# Mac — terminal 1
+# Mac - terminal 1
 bash fulldemo/run_gcs_mac.sh
 
-# Jetson — terminal 2 (HSV-only; run directly until TODO #2 YOLO integration is done)
+# Jetson - terminal 2 (HSV-only, no MAVLink TX; the safe manual fallback)
 source .venv-mavlink/bin/activate
 python3 camera_live_feed.py --no-display --camera-index 0 \
   --altitude-m 10 --origin-lat <LAT> --origin-lon <LON> \
   --log-dir ~/detection_logs
 
-# Future (once TODO #2 complete):
+# Or, with a trained YOLO model + MAVLink TX to the GCS (TODO #2 flags now
+# implemented, but not yet verified with a live camera/model -- test once
+# before relying on it):
 # GCS_IP=<MAC_IP> bash fulldemo/run_detection_jetson.sh
 ```
 
@@ -58,7 +60,7 @@ python visualize_results.py                               # results diagram PNG
 
 | Path | Purpose |
 |------|---------|
-| `camera_live_feed.py` | Main detector — HSV pipeline, Kalman tracking, GPS projection, MAVLink, ROS input |
+| `camera_live_feed.py` | Main detector - HSV pipeline, Kalman tracking, GPS projection, MAVLink, ROS input |
 | `camera_capture_spacebar.py` | Capture training images by spacebar |
 | `hsv_batch_detect.py` | Batch HSV detector over `captures/` folder |
 | `augment_test.py` | UAV noise augmentation test (blur + motion blur + glare) |

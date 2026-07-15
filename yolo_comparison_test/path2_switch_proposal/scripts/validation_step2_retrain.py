@@ -34,8 +34,9 @@ def main() -> int:
     dataset_dir = os.path.join(root, "dataset")
     dataset_yaml_abs = os.path.join(dataset_dir, "dataset_abs.yaml")
 
+    dataset_dir_posix = dataset_dir.replace("\\", "/")
     with open(dataset_yaml_abs, "w", encoding="utf-8") as f:
-        f.write(f"path: {dataset_dir.replace('\\', '/')}\n")
+        f.write(f"path: {dataset_dir_posix}\n")
         f.write("train: images/train\n")
         f.write("val: images/val\n")
         f.write("nc: 3\n")
@@ -48,12 +49,14 @@ def main() -> int:
     model = YOLO("yolo11n.pt")
     model.train(
         data=dataset_yaml_abs,
-        epochs=50,
+        # Generous ceiling; patience is the real stopping criterion.
+        epochs=100,
         imgsz=640,
         batch=8,
         project=project,
         name=name,
         patience=15,
+        workers=4,  # WSL2: default 8 train + 8 val loaders oversubscribe the box
         exist_ok=True,
     )
 

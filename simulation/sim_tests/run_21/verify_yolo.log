@@ -1,0 +1,178 @@
+/home/dhruv/.local/lib/python3.10/site-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+[INFO] ground truth: 7 buoys from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/robotx_uav_course.sdf
+       gate1_green    green  N=+1.25 E=+10.00
+       gate1_red      red    N=-1.25 E=+10.00
+       gate2_green    green  N=+1.25 E=+25.00
+       gate2_red      red    N=-1.25 E=+25.00
+       gate3_green    green  N=+1.25 E=+40.00
+       gate3_red      red    N=-1.25 E=+40.00
+       light_buoy     light  N=+0.00 E=+50.00
+[INFO] Loading YOLO model: yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/weights/honest_split_best.pt
+[INFO] Loaded camera calibration from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/calibration/camera_intrinsics_latest.json (fx=1319.07, fy=1407.50, cx=870.93, cy=533.10, RMS=1.057px)
+[INFO] connecting telemetry on udp:127.0.0.1:14553 ...
+[INFO] telemetry connected.
+[INFO] intrinsics[calibration-file(no-undistort)] fx=1319.1
+[INFO] verifying... fly the course now. Ctrl-C to finish (or it auto-finishes on disarm).
+[INFO] flight detected (armed) -- logging started.
+[LOG] green conf=0.95 est NED=N+1.33 E+9.77 (alt 10.0m, roll+0.3 pitch+1.2)
+[LOG] red   conf=0.79 est NED=N+1.38 E+9.77 (alt 10.0m, roll+0.3 pitch+1.2)
+[LOG] green conf=0.96 est NED=N+1.30 E+24.85 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.74 est NED=N+1.36 E+24.85 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.30 E+24.95 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.79 est NED=N+1.35 E+24.95 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.96 est NED=N+1.33 E+25.02 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] red   conf=0.80 est NED=N+1.38 E+25.02 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] green conf=0.95 est NED=N+1.37 E+25.08 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] red   conf=0.82 est NED=N+1.41 E+25.07 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] green conf=0.97 est NED=N+1.37 E+25.12 (alt 10.0m, roll+0.3 pitch-0.7)
+[LOG] red   conf=0.87 est NED=N+1.42 E+25.12 (alt 10.0m, roll+0.3 pitch-0.7)
+[LOG] green conf=0.96 est NED=N+1.35 E+25.15 (alt 10.0m, roll+0.3 pitch-0.7)
+[LOG] red   conf=0.84 est NED=N+1.40 E+25.15 (alt 10.0m, roll+0.3 pitch-0.7)
+[LOG] green conf=0.96 est NED=N+1.32 E+25.16 (alt 10.0m, roll+0.3 pitch-0.7)
+[LOG] red   conf=0.80 est NED=N+1.37 E+25.16 (alt 10.0m, roll+0.3 pitch-0.7)
+[LOG] green conf=0.96 est NED=N+1.30 E+25.19 (alt 10.0m, roll-0.1 pitch-0.4)
+[LOG] red   conf=0.82 est NED=N+1.36 E+25.19 (alt 10.0m, roll-0.1 pitch-0.4)
+[LOG] green conf=0.97 est NED=N+1.32 E+25.19 (alt 10.0m, roll-0.1 pitch-0.4)
+[LOG] red   conf=0.84 est NED=N+1.37 E+25.19 (alt 10.0m, roll-0.1 pitch-0.4)
+[LOG] green conf=0.96 est NED=N+1.34 E+25.21 (alt 10.0m, roll-0.1 pitch-0.2)
+[LOG] red   conf=0.79 est NED=N+1.40 E+25.21 (alt 10.0m, roll-0.1 pitch-0.2)
+[LOG] green conf=0.96 est NED=N+1.36 E+25.19 (alt 10.0m, roll-0.1 pitch-0.2)
+[LOG] red   conf=0.80 est NED=N+1.41 E+25.19 (alt 10.0m, roll-0.1 pitch-0.2)
+[LOG] green conf=0.96 est NED=N+1.35 E+25.18 (alt 10.0m, roll+0.2 pitch+0.1)
+[LOG] red   conf=0.75 est NED=N+1.40 E+25.19 (alt 10.0m, roll+0.2 pitch+0.1)
+[LOG] green conf=0.96 est NED=N+1.32 E+25.16 (alt 10.0m, roll+0.2 pitch+0.1)
+[LOG] red   conf=0.74 est NED=N+1.37 E+25.16 (alt 10.0m, roll+0.2 pitch+0.1)
+[LOG] green conf=0.95 est NED=N+1.30 E+25.13 (alt 10.0m, roll+0.2 pitch+0.1)
+[LOG] red   conf=0.76 est NED=N+1.36 E+25.13 (alt 10.0m, roll+0.2 pitch+0.1)
+[LOG] green conf=0.95 est NED=N+1.32 E+25.13 (alt 10.0m, roll-0.3 pitch+0.3)
+[LOG] red   conf=0.74 est NED=N+1.37 E+25.13 (alt 10.0m, roll-0.3 pitch+0.3)
+[LOG] green conf=0.94 est NED=N+1.34 E+25.10 (alt 10.0m, roll-0.3 pitch+0.3)
+[LOG] red   conf=0.66 est NED=N+1.39 E+25.10 (alt 10.0m, roll-0.3 pitch+0.3)
+[LOG] green conf=0.96 est NED=N+1.32 E+25.08 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.69 est NED=N+1.37 E+25.08 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.96 est NED=N+1.30 E+25.05 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.72 est NED=N+1.36 E+25.05 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.33 E+25.02 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] red   conf=0.74 est NED=N+1.39 E+25.02 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.36 E+24.99 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] red   conf=0.76 est NED=N+1.41 E+24.99 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] green conf=0.96 est NED=N+1.35 E+24.97 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] red   conf=0.79 est NED=N+1.40 E+24.97 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.32 E+24.95 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] red   conf=0.79 est NED=N+1.37 E+24.96 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.35 E+39.86 (alt 10.0m, roll-0.3 pitch+0.2)
+[LOG] red   conf=0.63 est NED=N+1.39 E+39.86 (alt 10.0m, roll-0.3 pitch+0.2)
+[LOG] green conf=0.95 est NED=N+1.36 E+39.92 (alt 10.0m, roll-0.3 pitch+0.2)
+[LOG] red   conf=0.69 est NED=N+1.40 E+39.92 (alt 10.0m, roll-0.3 pitch+0.2)
+[LOG] green conf=0.96 est NED=N+1.33 E+39.98 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] red   conf=0.77 est NED=N+1.38 E+39.98 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] green conf=0.96 est NED=N+1.31 E+40.03 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] red   conf=0.78 est NED=N+1.36 E+40.03 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] green conf=0.95 est NED=N+1.31 E+40.10 (alt 10.0m, roll-0.3 pitch-0.7)
+[LOG] red   conf=0.81 est NED=N+1.36 E+40.09 (alt 10.0m, roll-0.3 pitch-0.7)
+[LOG] green conf=0.95 est NED=N+1.33 E+40.13 (alt 10.0m, roll-0.3 pitch-0.7)
+[LOG] red   conf=0.80 est NED=N+1.38 E+40.13 (alt 10.0m, roll-0.3 pitch-0.7)
+[LOG] green conf=0.95 est NED=N+1.36 E+40.15 (alt 10.0m, roll-0.3 pitch-0.7)
+[LOG] red   conf=0.79 est NED=N+1.40 E+40.15 (alt 10.0m, roll-0.3 pitch-0.7)
+[LOG] green conf=0.95 est NED=N+1.36 E+40.18 (alt 10.0m, roll+0.2 pitch-0.5)
+[LOG] red   conf=0.86 est NED=N+1.41 E+40.18 (alt 10.0m, roll+0.2 pitch-0.5)
+[LOG] green conf=0.96 est NED=N+1.33 E+40.18 (alt 10.0m, roll+0.2 pitch-0.5)
+[LOG] red   conf=0.83 est NED=N+1.39 E+40.17 (alt 10.0m, roll+0.2 pitch-0.5)
+[LOG] green conf=0.97 est NED=N+1.31 E+40.19 (alt 10.0m, roll+0.0 pitch-0.3)
+[LOG] red   conf=0.82 est NED=N+1.37 E+40.19 (alt 10.0m, roll+0.0 pitch-0.3)
+[LOG] green conf=0.96 est NED=N+1.31 E+40.18 (alt 10.0m, roll+0.0 pitch-0.3)
+[LOG] red   conf=0.83 est NED=N+1.36 E+40.17 (alt 10.0m, roll+0.0 pitch-0.3)
+[LOG] green conf=0.96 est NED=N+1.33 E+40.16 (alt 10.0m, roll-0.2 pitch+0.0)
+[LOG] red   conf=0.81 est NED=N+1.38 E+40.15 (alt 10.0m, roll-0.2 pitch+0.0)
+[LOG] green conf=0.95 est NED=N+1.35 E+40.15 (alt 10.0m, roll-0.2 pitch+0.0)
+[LOG] red   conf=0.77 est NED=N+1.41 E+40.15 (alt 10.0m, roll-0.2 pitch+0.0)
+[LOG] green conf=0.96 est NED=N+1.36 E+40.13 (alt 10.0m, roll-0.2 pitch+0.0)
+[LOG] red   conf=0.82 est NED=N+1.41 E+40.13 (alt 10.0m, roll-0.2 pitch+0.0)
+[LOG] green conf=0.95 est NED=N+1.34 E+40.14 (alt 10.0m, roll+0.3 pitch+0.2)
+[LOG] red   conf=0.80 est NED=N+1.39 E+40.13 (alt 10.0m, roll+0.3 pitch+0.2)
+[LOG] green conf=0.94 est NED=N+1.32 E+40.11 (alt 10.0m, roll+0.3 pitch+0.2)
+[LOG] red   conf=0.83 est NED=N+1.38 E+40.11 (alt 10.0m, roll+0.3 pitch+0.2)
+[LOG] green conf=0.94 est NED=N+1.34 E+40.10 (alt 10.0m, roll-0.3 pitch+0.5)
+[LOG] red   conf=0.84 est NED=N+1.40 E+40.10 (alt 10.0m, roll-0.3 pitch+0.5)
+[LOG] green conf=0.95 est NED=N+1.35 E+40.06 (alt 10.0m, roll-0.3 pitch+0.5)
+[LOG] red   conf=0.85 est NED=N+1.41 E+40.06 (alt 10.0m, roll-0.3 pitch+0.5)
+[LOG] green conf=0.96 est NED=N+1.32 E+40.04 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.77 est NED=N+1.38 E+40.04 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.31 E+40.01 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.79 est NED=N+1.36 E+40.01 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.95 est NED=N+1.34 E+39.98 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] red   conf=0.83 est NED=N+1.39 E+39.98 (alt 10.0m, roll+0.3 pitch+0.4)
+[LOG] green conf=0.94 est NED=N+1.33 E+39.96 (alt 10.0m, roll-0.2 pitch+0.1)
+[LOG] red   conf=0.83 est NED=N+1.37 E+39.96 (alt 10.0m, roll-0.2 pitch+0.1)
+[LOG] green conf=0.95 est NED=N+1.32 E+39.93 (alt 10.0m, roll-0.2 pitch+0.1)
+[LOG] red   conf=0.83 est NED=N+1.36 E+39.93 (alt 10.0m, roll-0.2 pitch+0.1)
+[LOG] blue  conf=0.93 est NED=N+0.03 E+49.94 (alt 10.0m, roll+0.2 pitch+0.5)
+[LOG] blue  conf=0.94 est NED=N+0.01 E+49.96 (alt 10.0m, roll+0.2 pitch+0.5)
+[LOG] blue  conf=0.93 est NED=N-0.04 E+50.01 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] blue  conf=0.93 est NED=N-0.05 E+50.05 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] blue  conf=0.94 est NED=N-0.03 E+50.11 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] blue  conf=0.92 est NED=N-0.00 E+50.13 (alt 10.0m, roll+0.3 pitch-0.6)
+[LOG] blue  conf=0.92 est NED=N+0.02 E+50.16 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] blue  conf=0.94 est NED=N+0.01 E+50.16 (alt 10.0m, roll-0.3 pitch-0.5)
+[LOG] blue  conf=0.93 est NED=N-0.02 E+50.17 (alt 10.0m, roll+0.1 pitch-0.3)
+[LOG] blue  conf=0.93 est NED=N-0.04 E+50.16 (alt 10.0m, roll+0.1 pitch-0.3)
+[LOG] blue  conf=0.93 est NED=N-0.01 E+50.18 (alt 10.0m, roll+0.1 pitch-0.0)
+[LOG] blue  conf=0.91 est NED=N+0.00 E+50.16 (alt 10.0m, roll+0.1 pitch-0.0)
+[LOG] blue  conf=0.94 est NED=N-0.01 E+50.14 (alt 10.0m, roll+0.1 pitch-0.0)
+[LOG] blue  conf=0.93 est NED=N-0.03 E+50.14 (alt 10.0m, roll-0.3 pitch+0.2)
+[LOG] blue  conf=0.91 est NED=N-0.02 E+50.11 (alt 10.0m, roll-0.3 pitch+0.2)
+[LOG] blue  conf=0.94 est NED=N+0.01 E+50.10 (alt 10.0m, roll+0.4 pitch+0.4)
+[LOG] blue  conf=0.94 est NED=N+0.02 E+50.07 (alt 10.0m, roll+0.4 pitch+0.4)
+[LOG] blue  conf=0.94 est NED=N+0.01 E+50.05 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] blue  conf=0.94 est NED=N-0.02 E+50.02 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] blue  conf=0.94 est NED=N-0.02 E+50.00 (alt 10.0m, roll-0.3 pitch+0.4)
+[LOG] blue  conf=0.93 est NED=N+0.01 E+50.01 (alt 10.0m, roll+0.2 pitch+0.5)
+[LOG] blue  conf=0.93 est NED=N+0.00 E+49.98 (alt 10.0m, roll+0.2 pitch+0.5)
+[LOG] blue  conf=0.93 est NED=N-0.02 E+49.95 (alt 10.0m, roll-0.1 pitch+0.5)
+[LOG] blue  conf=0.94 est NED=N+0.01 E+49.93 (alt 10.0m, roll-0.1 pitch+0.5)
+[LOG] blue  conf=0.94 est NED=N+0.03 E+49.92 (alt 10.0m, roll-0.1 pitch+0.5)
+[LOG] blue  conf=0.93 est NED=N-0.00 E+49.91 (alt 10.0m, roll-0.1 pitch+0.5)
+[LOG] blue  conf=0.93 est NED=N-0.03 E+49.91 (alt 9.9m, roll-0.2 pitch+0.4)
+[LOG] blue  conf=0.91 est NED=N-0.02 E+49.91 (alt 9.9m, roll-0.2 pitch+0.4)
+[LOG] blue  conf=0.91 est NED=N+0.01 E+49.90 (alt 9.9m, roll-0.2 pitch+0.4)
+[LOG] blue  conf=0.91 est NED=N+0.02 E+49.90 (alt 9.8m, roll+0.4 pitch+0.3)
+[LOG] blue  conf=0.93 est NED=N-0.01 E+49.89 (alt 9.8m, roll+0.4 pitch+0.3)
+[LOG] blue  conf=0.93 est NED=N-0.03 E+49.90 (alt 9.6m, roll-0.3 pitch+0.2)
+
+# RobotX UAV Course - Accuracy Verification Report
+
+- **Flight / recording timestamp:** 2026-07-11 20:32:27
+- **Flight duration:** 50.7 s (OK; minimum 15 s)
+- **Detector:** hsv
+- **World (ground truth):** `simulation/gazebo/worlds/robotx_uav_course.sdf`
+- **Detection log:** `simulation/sim_tests/run_21/detections_20260711_203225.csv`
+- **Datum:** lat -35.363262, lon 149.165237
+
+## Summary
+
+- Total logged detections: **124**
+- Colour buoys detected: **6 / 6**
+- Mean horizontal error: **1.39 m**
+- Max horizontal error: **2.67 m**
+- Mean detection confidence: **0.87**
+- Unmatched detections (no buoy within 3.0 m): **32**
+
+## Per-buoy accuracy
+
+| Buoy | Colour | True N,E (m) | Detections | Mean err (m) | Max err (m) | Mean conf |
+|------|--------|--------------|-----------:|-------------:|------------:|----------:|
+| gate1_green | green | 1.25, 10.00 | 1 | 0.25 | 0.25 | 0.95 |
+| gate1_red | red | -1.25, 10.00 | 1 | 2.64 | 2.64 | 0.79 |
+| gate2_green | green | 1.25, 25.00 | 22 | 0.15 | 0.23 | 0.96 |
+| gate2_red | red | -1.25, 25.00 | 22 | 2.64 | 2.67 | 0.77 |
+| gate3_green | green | 1.25, 40.00 | 23 | 0.14 | 0.21 | 0.95 |
+| gate3_red | red | -1.25, 40.00 | 23 | 2.64 | 2.67 | 0.80 |
+| light_buoy | light | 0.00, 50.00 | 0 | - | - | - (nadir: black box, no colour - expected miss) |
+
+_Each detection is matched to the nearest same-colour ground-truth buoy within the match radius; error is the horizontal distance between the projected absolute position and the buoy's true position._
+
+[INFO] report written: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_21/accuracy_report_20260711_203225.md
+[INFO] latest report : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_21/accuracy_report.md
+[INFO] detection log : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_21/detections_20260711_203225.csv
+[INFO] summary json  : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_21/summary.json

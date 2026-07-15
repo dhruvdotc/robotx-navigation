@@ -1,54 +1,72 @@
 #!/usr/bin/env python3
-"""Create reproducible 80/20 train/val split for honest validation."""
+"""Stage the honest train/val split into scripts/dataset/ for steps 2-5.
+
+This script used to CREATE the split here, by shuffling path2_dataset/images
+80/20. That was quietly dishonest once 00_preprocess_training_data.py entered
+the pipeline: the pool being shuffled contained augmented variants, so an
+original could land in train while its own _augNN twins landed in "val"  - 
+near-duplicate leakage that inflated held-out mAP while the train/val loss
+gap (step 4) correctly screamed overfit.
+
+The split now happens ONCE, at the raw-capture level, inside
+00_preprocess_training_data.py (see its split_manifest.txt), and 01_autolabel
+preserves it as path2_dataset/images/{train,val}. This script's only job is
+to copy that structure verbatim into scripts/dataset/ - the layout steps 2-5
+consume - and to refuse loudly if handed a flat (pre-split-fix) dataset
+rather than silently re-splitting it.
+"""
 
 from __future__ import annotations
 
 import os
-import random
 import shutil
+import sys
+
+
+def _copy_subset(src_images: str, src_labels: str, dst_images: str, dst_labels: str) -> int:
+    os.makedirs(dst_images, exist_ok=True)
+    os.makedirs(dst_labels, exist_ok=True)
+    count = 0
+    for name in sorted(os.listdir(src_images)):
+        if not name.lower().endswith(".jpg"):
+            continue
+        stem = os.path.splitext(name)[0]
+        shutil.copy2(os.path.join(src_images, name), os.path.join(dst_images, name))
+        src_l = os.path.join(src_labels, stem + ".txt")
+        dst_l = os.path.join(dst_labels, stem + ".txt")
+        if os.path.exists(src_l):
+            shutil.copy2(src_l, dst_l)
+        else:
+            open(dst_l, "w", encoding="utf-8").close()
+        count += 1
+    return count
 
 
 def main() -> int:
     root = os.path.dirname(__file__)
-    src_images = os.path.join(root, "path2_dataset", "images")
-    src_labels = os.path.join(root, "path2_dataset", "labels")
-
+    src = os.path.join(root, "path2_dataset")
     dst_root = os.path.join(root, "dataset")
-    train_img = os.path.join(dst_root, "images", "train")
-    val_img = os.path.join(dst_root, "images", "val")
-    train_lbl = os.path.join(dst_root, "labels", "train")
-    val_lbl = os.path.join(dst_root, "labels", "val")
 
-    for p in (train_img, val_img, train_lbl, val_lbl):
-        os.makedirs(p, exist_ok=True)
+    if not os.path.isdir(os.path.join(src, "images", "train")):
+        print(
+            "[ERROR] path2_dataset has no images/train + images/val structure.\n"
+            "        Re-splitting a flat dataset here would leak augmented\n"
+            "        variants across the split (the bug this script used to\n"
+            "        have). Re-run the pipeline from the raw captures:\n"
+            "          python 00_preprocess_training_data.py\n"
+            "          python 01_autolabel.py --captures-dir ../preprocessed_captures",
+            file=sys.stderr,
+        )
+        return 1
 
-    all_images = sorted(
-        [n for n in os.listdir(src_images) if n.lower().endswith(".jpg") and os.path.isfile(os.path.join(src_images, n))]
+    n_train = _copy_subset(
+        os.path.join(src, "images", "train"), os.path.join(src, "labels", "train"),
+        os.path.join(dst_root, "images", "train"), os.path.join(dst_root, "labels", "train"),
     )
-    random.seed(42)
-    shuffled = all_images[:]
-    random.shuffle(shuffled)
-
-    split_idx = int(0.8 * len(shuffled))
-    train_names = set(shuffled[:split_idx])
-    val_names = set(shuffled[split_idx:])
-
-    for name in shuffled:
-        stem = os.path.splitext(name)[0]
-        src_i = os.path.join(src_images, name)
-        src_l = os.path.join(src_labels, stem + ".txt")
-        if name in train_names:
-            shutil.copy2(src_i, os.path.join(train_img, name))
-            if os.path.exists(src_l):
-                shutil.copy2(src_l, os.path.join(train_lbl, stem + ".txt"))
-            else:
-                open(os.path.join(train_lbl, stem + ".txt"), "w", encoding="utf-8").close()
-        else:
-            shutil.copy2(src_i, os.path.join(val_img, name))
-            if os.path.exists(src_l):
-                shutil.copy2(src_l, os.path.join(val_lbl, stem + ".txt"))
-            else:
-                open(os.path.join(val_lbl, stem + ".txt"), "w", encoding="utf-8").close()
+    n_val = _copy_subset(
+        os.path.join(src, "images", "val"), os.path.join(src, "labels", "val"),
+        os.path.join(dst_root, "images", "val"), os.path.join(dst_root, "labels", "val"),
+    )
 
     yaml_path = os.path.join(dst_root, "dataset.yaml")
     with open(yaml_path, "w", encoding="utf-8") as f:
@@ -58,8 +76,9 @@ def main() -> int:
         f.write("nc: 3\n")
         f.write("names: ['red', 'green', 'blue']\n")
 
-    print(f"Train set: {len(train_names)} images")
-    print(f"Val set:   {len(val_names)} images (NEVER seen during training)")
+    print(f"Train set: {n_train} images")
+    print(f"Val set:   {n_val} images (split at RAW level by 00_preprocess - "
+          f"no augmented variant of any val original exists in train)")
     return 0
 
 

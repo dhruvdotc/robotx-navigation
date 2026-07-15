@@ -1,6 +1,6 @@
-# Bluetooth Communication Plan — Jetson Orin Nano ↔ Laptop
+# Bluetooth Communication Plan - Jetson Orin Nano ↔ Laptop
 
-> **Status: PLANNED — do not implement until USB-C pipeline is verified end-to-end.**
+> **Status: PLANNED - do not implement until USB-C pipeline is verified end-to-end.**
 
 ## Hardware
 
@@ -13,7 +13,7 @@
 ## Overview
 
 Replace the USB-C ethernet link (`192.168.55.x`) with a Bluetooth PAN (Personal Area Network).
-Bluetooth PAN creates a standard IP network over BT — the MAVLink UDP packets require no changes,
+Bluetooth PAN creates a standard IP network over BT - the MAVLink UDP packets require no changes,
 only the IP addresses and network interface names change.
 
 Architecture stays identical:
@@ -23,7 +23,7 @@ Jetson (BT PAN client) → udpout:<laptop-BT-IP>:14555 → Laptop (BT PAN server
 
 ---
 
-## Step 1 — Verify UB400 is Recognized on Jetson
+## Step 1 - Verify UB400 is Recognized on Jetson
 
 ```bash
 lsusb | grep -i "TP-Link\|Bluetooth"
@@ -35,7 +35,7 @@ If not: `sudo apt-get install -y bluez bluetooth` and recheck.
 
 ---
 
-## Step 2 — Pair Jetson and Laptop
+## Step 2 - Pair Jetson and Laptop
 
 On the Jetson:
 ```bash
@@ -53,9 +53,9 @@ On the Mac: accept the pairing request in System Settings → Bluetooth.
 
 ---
 
-## Step 3 — Set Up Bluetooth PAN
+## Step 3 - Set Up Bluetooth PAN
 
-Bluetooth PAN (profile: NAP — Network Access Point) lets one device act as a network gateway.
+Bluetooth PAN (profile: NAP - Network Access Point) lets one device act as a network gateway.
 
 **Option A: Laptop as NAP server (recommended)**
 
@@ -82,27 +82,27 @@ More complex since the Jetson has no internet to share. Not recommended for this
 
 ---
 
-## Step 4 — Determine IP Addresses
+## Step 4 - Determine IP Addresses
 
 After PAN is up:
 
 On the Jetson:
 ```bash
 ip addr show bnep0
-# e.g. 192.168.X.Y — this is the Jetson's BT IP
+# e.g. 192.168.X.Y - this is the Jetson's BT IP
 ```
 
 On the Mac:
 ```bash
 ifconfig | grep -A2 bridge   # or btpan0
-# e.g. 192.168.X.1 — this is the laptop's BT IP (GCS address)
+# e.g. 192.168.X.1 - this is the laptop's BT IP (GCS address)
 ```
 
 ---
 
-## Step 5 — Update Pipeline for Bluetooth IP
+## Step 5 - Update Pipeline for Bluetooth IP
 
-No code changes needed — just pass the new laptop BT IP to `--gcs-ip`:
+No code changes needed - just pass the new laptop BT IP to `--gcs-ip`:
 
 **Jetson:**
 ```bash
@@ -115,14 +115,14 @@ python3 camera_live_feed.py \
   --drone-lat <LAT> --drone-lon <LON>
 ```
 
-**Laptop GCS** (no change needed — listens on `0.0.0.0:14555`):
+**Laptop GCS** (no change needed - listens on `0.0.0.0:14555`):
 ```bash
 python mavlink_comms/scripts/run_ground_station.py
 ```
 
 ---
 
-## Step 6 — Auto-reconnect on Boot (optional, post-demo)
+## Step 6 - Auto-reconnect on Boot (optional, post-demo)
 
 To make the Jetson reconnect BT PAN automatically on power-up:
 
@@ -158,7 +158,7 @@ sudo systemctl start bt-pan
 | Range | 0m (tethered) | ~10m (class 2) |
 | MAVLink STATUSTEXT size | ~50 bytes | trivial |
 
-MAVLink `STATUSTEXT` messages are ~50 bytes each — Bluetooth bandwidth is not a bottleneck.
+MAVLink `STATUSTEXT` messages are ~50 bytes each - Bluetooth bandwidth is not a bottleneck.
 Added latency (~10-50ms) is negligible for buoy GPS reporting.
 
 ---

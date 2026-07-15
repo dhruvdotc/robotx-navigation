@@ -1,0 +1,56 @@
+[INFO] ground truth: 7 buoys from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/course_2_search_field.sdf
+       green1         green  N=+10.00 E=+8.00
+       green2         green  N=-8.00 E=+24.00
+       green3         green  N=+7.00 E=+42.00
+       red1           red    N=-11.00 E=+14.00
+       red2           red    N=+6.00 E=+31.00
+       red3           red    N=-5.00 E=+48.00
+       light_buoy     light  N=+2.00 E=+55.00
+Classes directory missing or empty: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/captures/classes
+Using fallback HSV ranges:
+Fallback HSV ranges:
+  red[0] low=(0, 100, 70) high=(10, 255, 255)
+  red[1] low=(170, 100, 70) high=(179, 255, 255)
+  green[0] low=(75, 60, 50) high=(105, 255, 255)
+  blue[0] low=(100, 80, 60) high=(130, 255, 255)
+[INFO] Loaded camera calibration from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/calibration/camera_intrinsics_latest.json (fx=1319.07, fy=1407.50, cx=870.93, cy=533.10, RMS=1.057px)
+[INFO] connecting telemetry on udp:127.0.0.1:14551 ...
+[INFO] telemetry connected.
+[INFO] intrinsics[calibration-file(no-undistort)] fx=1319.1
+[INFO] verifying... fly the course now. Ctrl-C to finish (or it auto-finishes on disarm).
+
+# RobotX UAV Course - Accuracy Verification Report
+
+- **Flight / recording timestamp:** 2026-07-10 20:16:28
+- **Flight duration:** 100.0 s (OK; minimum 15 s)
+- **World (ground truth):** `simulation/gazebo/worlds/course_2_search_field.sdf`
+- **Detection log:** `simulation/sim_tests/run_2/detections_20260710_201626.csv`
+- **Datum:** lat -35.363262, lon 149.165237
+
+## Summary
+
+- Total logged detections: **0**
+- Colour buoys detected: **0 / 6**
+- Mean horizontal error: **nan m**
+- Max horizontal error: **nan m**
+- Mean detection confidence: **nan**
+- Unmatched detections (no buoy within 3.0 m): **0**
+
+## Per-buoy accuracy
+
+| Buoy | Colour | True N,E (m) | Detections | Mean err (m) | Max err (m) | Mean conf |
+|------|--------|--------------|-----------:|-------------:|------------:|----------:|
+| green1 | green | 10.00, 8.00 | 0 | - | - | - |
+| green2 | green | -8.00, 24.00 | 0 | - | - | - |
+| green3 | green | 7.00, 42.00 | 0 | - | - | - |
+| red1 | red | -11.00, 14.00 | 0 | - | - | - |
+| red2 | red | 6.00, 31.00 | 0 | - | - | - |
+| red3 | red | -5.00, 48.00 | 0 | - | - | - |
+| light_buoy | light | 2.00, 55.00 | 0 | - | - | - (nadir: black box, no colour - expected miss) |
+
+_Each detection is matched to the nearest same-colour ground-truth buoy within the match radius; error is the horizontal distance between the projected absolute position and the buoy's true position._
+
+[INFO] report written: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_2/accuracy_report_20260710_201626.md
+[INFO] latest report : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_2/accuracy_report.md
+[INFO] detection log : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_2/detections_20260710_201626.csv
+[INFO] summary json  : /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/sim_tests/run_2/summary.json

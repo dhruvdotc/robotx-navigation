@@ -1,0 +1,104 @@
+{
+  "detector": "yolo",
+  "timestamp": "2026-07-11T22:53:39",
+  "duration_s": 87.1,
+  "duration_ok": true,
+  "n_detections": 803,
+  "colour_buoys_detected": 8,
+  "colour_buoys_total": 8,
+  "mean_error_m": 0.33,
+  "max_error_m": 1.186,
+  "mean_confidence": 0.957,
+  "unmatched_detections": 292,
+  "per_buoy": [
+    {
+      "name": "gate1_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 10.0,
+      "detections": 104,
+      "mean_error_m": 0.378,
+      "mean_confidence": 0.966
+    },
+    {
+      "name": "gate1_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 10.0,
+      "detections": 104,
+      "mean_error_m": 0.376,
+      "mean_confidence": 0.947
+    },
+    {
+      "name": "gate2_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 25.0,
+      "detections": 83,
+      "mean_error_m": 0.377,
+      "mean_confidence": 0.969
+    },
+    {
+      "name": "gate2_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 25.0,
+      "detections": 83,
+      "mean_error_m": 0.377,
+      "mean_confidence": 0.954
+    },
+    {
+      "name": "gate3_green",
+      "color": "green",
+      "true_north_m": 15.0,
+      "true_east_m": 36.25,
+      "detections": 37,
+      "mean_error_m": 0.225,
+      "mean_confidence": 0.941
+    },
+    {
+      "name": "gate3_red",
+      "color": "red",
+      "true_north_m": 15.0,
+      "true_east_m": 33.75,
+      "detections": 36,
+      "mean_error_m": 0.23,
+      "mean_confidence": 0.95
+    },
+    {
+      "name": "gate4_green",
+      "color": "green",
+      "true_north_m": 30.0,
+      "true_east_m": 36.25,
+      "detections": 32,
+      "mean_error_m": 0.163,
+      "mean_confidence": 0.96
+    },
+    {
+      "name": "gate4_red",
+      "color": "red",
+      "true_north_m": 30.0,
+      "true_east_m": 33.75,
+      "detections": 32,
+      "mean_error_m": 0.18,
+      "mean_confidence": 0.96
+    },
+    {
+      "name": "light_buoy",
+      "color": "light",
+      "true_north_m": 42.0,
+      "true_east_m": 35.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    }
+  ],
+  "files": {
+    "detections_csv": "detections_20260711_225336.csv",
+    "accuracy_report": "accuracy_report_20260711_225336.md"
+  },
+  "run": 29,
+  "course": 3,
+  "course_name": "Course 3: L-Shaped Dogleg",
+  "mode": "headless"
+}

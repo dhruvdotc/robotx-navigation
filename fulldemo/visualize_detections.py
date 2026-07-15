@@ -76,7 +76,7 @@ def plot(records: list[dict], ax: plt.Axes) -> None:
                         textcoords="offset points", xytext=(6, 4),
                         fontsize=7, color=hex_color)
 
-    # Unique track IDs — draw convex hull or just connect first occurrences
+    # Unique track IDs - draw convex hull or just connect first occurrences
     all_lons = [r["lon"] for r in records if "lon" in r]
     all_lats = [r["lat"] for r in records if "lat" in r]
     if all_lons:
@@ -86,7 +86,7 @@ def plot(records: list[dict], ax: plt.Axes) -> None:
         ax.set_ylim(min(all_lats) - pad_lat, max(all_lats) + pad_lat)
 
     total = sum(len(v) for v in by_color.values())
-    ax.set_title(f"RobotX Buoy Detection Map  —  {total} detections", fontsize=13)
+    ax.set_title(f"RobotX Buoy Detection Map  -  {total} detections", fontsize=13)
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
     ax.legend(loc="upper right")
@@ -113,7 +113,7 @@ def main() -> None:
 
     if args.live:
         plt.ion()
-        print(f"Live mode — watching {args.jsonl} (Ctrl+C to stop)")
+        print(f"Live mode - watching {args.jsonl} (Ctrl+C to stop)")
         last_count = -1
         while True:
             records = load_jsonl(args.jsonl)

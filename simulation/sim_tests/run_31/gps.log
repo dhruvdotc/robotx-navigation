@@ -1,0 +1,1896 @@
++----------------------------------------------------------+
+|       RobotX UAV  --  Live GPS & Flight Status          |
++----------------------------------------------------------+
+  Connecting to SITL on udp:127.0.0.1:14552 ...
+  Connected. Waiting for GPS fix...
+
+
+
+
+
+
+
+
+[K  [17:19:14]
+[K  Status  : disarmed    Mode: INIT        
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:15]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:16]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:17]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:18]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:19]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:20]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:21]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:23]
+[K  Status  : disarmed    Mode: STABILIZE   
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:24]
+[K  Status  : disarmed    Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:25]
+[K  Status  : disarmed    Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:26]
+[K  Status  : disarmed    Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:27]
+[K  Status  : disarmed    Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:28]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:30]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:31]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.0 m
+[K  Speed   : 0.00 m/s horiz   -0.24 m/s vert
+[K
+[7A[K  [17:19:32]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    0.8 m
+[K  Speed   : 0.00 m/s horiz   -1.19 m/s vert
+[K
+[7A[K  [17:19:33]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    2.5 m
+[K  Speed   : 0.00 m/s horiz   -2.27 m/s vert
+[K
+[7A[K  [17:19:34]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    5.0 m
+[K  Speed   : 0.00 m/s horiz   -2.54 m/s vert
+[K
+[7A[K  [17:19:35]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    7.5 m
+[K  Speed   : 0.00 m/s horiz   -2.27 m/s vert
+[K
+[7A[K  [17:19:36]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652154
+[K  Alt AGL :    9.3 m
+[K  Speed   : 0.00 m/s horiz   -1.24 m/s vert
+[K
+[7A[K  [17:19:37]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632623
+[K  Lon     : +149.1652169
+[K  Alt AGL :   10.0 m
+[K  Speed   : 0.84 m/s horiz   -0.23 m/s vert
+[K
+[7A[K  [17:19:38]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632726
+[K  Lon     : +149.1652342
+[K  Alt AGL :    9.8 m
+[K  Speed   : 2.24 m/s horiz   +0.23 m/s vert
+[K
+[7A[K  [17:19:39]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632880
+[K  Lon     : +149.1652394
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.60 m/s horiz   -0.01 m/s vert
+[K
+[7A[K  [17:19:40]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633030
+[K  Lon     : +149.1652377
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.64 m/s horiz   -0.01 m/s vert
+[K
+[7A[K  [17:19:41]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633254
+[K  Lon     : +149.1652377
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.06 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:42]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633308
+[K  Lon     : +149.1652377
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.35 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:44]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633460
+[K  Lon     : +149.1652375
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.85 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:45]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633610
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.47 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:46]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633684
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.13 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:47]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633685
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.05 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:48]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633696
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.12 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:49]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633702
+[K  Lon     : +149.1652383
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.47 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:50]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633702
+[K  Lon     : +149.1652511
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:51]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633698
+[K  Lon     : +149.1652695
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.69 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:52]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633698
+[K  Lon     : +149.1652867
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.48 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:53]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1653031
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:54]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1653212
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.84 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:55]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1653405
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.61 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:56]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1653576
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:58]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1653744
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.63 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:19:59]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1653939
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.71 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:00]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1654115
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:01]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1654281
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:02]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1654470
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.80 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:03]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1654653
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:04]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1654821
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:05]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1654997
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.80 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:06]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1655190
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.62 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:07]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1655361
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:09]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1655532
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.65 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:10]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1655731
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.76 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:11]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1655912
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:12]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1656080
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:13]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1656272
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.86 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:14]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1656459
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.57 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:15]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1656628
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:16]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1656803
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:17]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1656999
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.63 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:18]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1657170
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:20]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1657339
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.58 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:21]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1657531
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.72 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:22]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1657710
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:23]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1657879
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:24]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658062
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:25]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658249
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.57 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:26]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658419
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:27]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658591
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.72 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:28]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658786
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.66 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:29]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658943
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.82 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:30]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658967
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.00 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:31]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658975
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.10 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:32]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633699
+[K  Lon     : +149.1658985
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.05 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:33]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633667
+[K  Lon     : +149.1658986
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.09 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:35]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633528
+[K  Lon     : +149.1658985
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.82 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:36]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633379
+[K  Lon     : +149.1658982
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.48 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:37]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633249
+[K  Lon     : +149.1658982
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.42 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:38]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633175
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.17 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:39]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633170
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.06 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:40]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633163
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.09 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:41]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633157
+[K  Lon     : +149.1658970
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.60 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:42]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633158
+[K  Lon     : +149.1658816
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.82 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:43]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633161
+[K  Lon     : +149.1658637
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.45 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:44]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633161
+[K  Lon     : +149.1658479
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.45 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:46]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1658309
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.75 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:47]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1658112
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.67 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:48]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1657938
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:49]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1657771
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:50]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1657583
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:51]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1657401
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:52]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1657234
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:53]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1657056
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.82 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:54]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1656863
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.61 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:55]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1656693
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:56]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1656525
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.63 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:57]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1656329
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.71 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:20:58]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1656154
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:00]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1655987
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:01]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1655798
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.80 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:02]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1655615
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:03]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1655448
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:04]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1655319
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.66 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:05]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1655121
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.72 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:06]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1654945
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:07]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1654777
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:08]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1654590
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:09]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1654405
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:10]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1654236
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:11]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1654060
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:12]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1653869
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.62 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:13]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1653699
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:15]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1653529
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.56 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:16]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1653337
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.73 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:17]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1653160
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:18]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652992
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:19]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652813
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:20]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652623
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.59 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:21]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652456
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.34 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:22]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652389
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.06 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:23]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652385
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.07 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:24]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633160
+[K  Lon     : +149.1652375
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.07 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:25]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633150
+[K  Lon     : +149.1652372
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:26]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3633024
+[K  Lon     : +149.1652372
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.80 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:27]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632880
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.44 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:28]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632751
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.45 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:30]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632646
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:31]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632625
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.09 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:32]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632619
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.01 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:33]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632619
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.03 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:34]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652466
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:35]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652636
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.45 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:36]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652794
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.43 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:37]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1652968
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:38]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1653155
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.60 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:39]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1653327
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:40]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1653495
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.64 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:41]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1653691
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.68 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:42]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1653864
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:44]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1654031
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:45]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1654217
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.79 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:46]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1654400
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:47]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1654567
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:48]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1654744
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:49]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1654936
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.62 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:50]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1655107
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:51]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1655276
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:52]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1655470
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:53]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1655649
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:54]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1655819
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:56]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1655999
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.80 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:57]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1656190
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.60 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:58]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1656360
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:21:59]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1656529
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.66 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:00]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1656724
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.67 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:01]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1656897
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:02]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1657065
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:03]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1657256
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:04]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1657439
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:05]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1657607
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:06]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1657784
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:08]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1657980
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.63 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:09]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658151
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:10]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658320
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.63 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:11]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658513
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.71 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:12]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658689
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:13]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658860
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:14]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658965
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.21 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:15]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658970
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.03 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:16]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632621
+[K  Lon     : +149.1658979
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.09 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:17]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632616
+[K  Lon     : +149.1658986
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.42 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:18]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632507
+[K  Lon     : +149.1658986
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.57 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:19]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632371
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.44 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:21]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632239
+[K  Lon     : +149.1658982
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:22]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632112
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:23]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632093
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.02 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:24]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632091
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.10 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:25]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632081
+[K  Lon     : +149.1658984
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.06 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:26]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632080
+[K  Lon     : +149.1658917
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.32 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:27]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632081
+[K  Lon     : +149.1658752
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.47 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:28]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632081
+[K  Lon     : +149.1658592
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.57 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:29]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1658402
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.66 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:30]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1658229
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:31]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1658061
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:32]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1657873
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.78 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:33]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1657689
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:34]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1657521
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:36]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1657347
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.78 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:37]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1657017
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.03 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:38]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1656946
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.41 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:39]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1656770
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.70 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:40]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1656581
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.58 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:41]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1656415
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.47 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:42]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1656251
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:43]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1656064
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:45]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1655879
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:46]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1655711
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:47]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1655537
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.74 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:48]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1655345
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.63 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:49]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1655174
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:50]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1655006
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:51]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1654814
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.75 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:52]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1654635
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:53]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1654470
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:54]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1654289
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.84 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:55]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1654098
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.58 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:56]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1653930
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:58]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1653759
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.64 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:22:59]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1653565
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.70 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:00]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1653390
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:01]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1653225
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:02]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1653038
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.79 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:03]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1652854
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.54 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:04]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1652688
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:05]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1652513
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.75 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:06]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1652392
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.24 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:07]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1652388
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.01 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:08]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632082
+[K  Lon     : +149.1652379
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.10 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:09]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3632081
+[K  Lon     : +149.1652372
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.21 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:10]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631995
+[K  Lon     : +149.1652370
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.49 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:11]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631859
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.44 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:13]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631722
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.71 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:14]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631582
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.98 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:15]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631557
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.01 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:16]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631552
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.11 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:17]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1652374
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.06 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:18]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631540
+[K  Lon     : +149.1652432
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.27 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:19]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1652595
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.48 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:20]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631544
+[K  Lon     : +149.1652771
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.68 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:21]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1652945
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:22]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1653112
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:23]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1653284
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.74 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:24]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1653480
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.64 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:25]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1653648
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.49 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:27]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1653815
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:28]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1654003
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.77 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:29]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1654184
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:30]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1654352
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:31]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1654529
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.79 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:32]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1654720
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.61 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:33]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1654889
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:34]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1655056
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.59 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:35]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1655251
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.71 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:36]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1655428
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:37]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1655596
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.53 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:38]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1655778
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:39]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1655966
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.59 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:40]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1656136
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:41]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1656262
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.61 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:42]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1656410
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.80 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:43]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1656721
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.04 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:45]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1656798
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.46 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:46]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1656988
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.83 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:47]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1657169
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.47 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:48]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1657329
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.47 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:49]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1657496
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.66 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:50]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1657693
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.68 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:51]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1657866
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.50 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:52]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658033
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.52 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:53]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658220
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.81 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:54]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658405
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.55 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:55]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658572
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.51 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:57]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658747
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.79 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:58]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658931
+[K  Alt AGL :    9.8 m
+[K  Speed   : 1.13 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:23:59]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658969
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.02 m/s horiz   +0.01 m/s vert
+[K
+[7A[K  [17:24:00]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658972
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.09 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:24:01]
+[K  Status  : ARMED       Mode: GUIDED      
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658982
+[K  Alt AGL :    9.8 m
+[K  Speed   : 0.07 m/s horiz   +0.00 m/s vert
+[K
+[7A[K  [17:24:02]
+[K  Status  : ARMED       Mode: LAND        
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658986
+[K  Alt AGL :    9.6 m
+[K  Speed   : 0.00 m/s horiz   +0.50 m/s vert
+[K
+[7A[K  [17:24:03]
+[K  Status  : ARMED       Mode: LAND        
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658986
+[K  Alt AGL :    9.1 m
+[K  Speed   : 0.02 m/s horiz   +0.50 m/s vert
+[K
+[7A[K  [17:24:04]
+[K  Status  : ARMED       Mode: LAND        
+[K  Lat     : -35.3631543
+[K  Lon     : +149.1658982
+[K  Alt AGL :    8.6 m
+[K  Speed   : 0.01 m/s horiz   +0.50 m/s vert
+[K

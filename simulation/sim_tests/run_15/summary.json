@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-07-11T01:57:35",
+  "duration_s": 171.5,
+  "duration_ok": true,
+  "n_detections": 1378,
+  "colour_buoys_detected": 0,
+  "colour_buoys_total": 6,
+  "mean_error_m": null,
+  "max_error_m": null,
+  "mean_confidence": null,
+  "unmatched_detections": 1378,
+  "per_buoy": [
+    {
+      "name": "gate1_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 10.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "gate1_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 10.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "gate2_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 25.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "gate2_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 25.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "gate3_green",
+      "color": "green",
+      "true_north_m": 1.25,
+      "true_east_m": 40.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "gate3_red",
+      "color": "red",
+      "true_north_m": -1.25,
+      "true_east_m": 40.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    },
+    {
+      "name": "light_buoy",
+      "color": "light",
+      "true_north_m": 0.0,
+      "true_east_m": 50.0,
+      "detections": 0,
+      "mean_error_m": null,
+      "mean_confidence": null
+    }
+  ],
+  "files": {
+    "detections_csv": "detections_20260711_015657.csv",
+    "accuracy_report": "accuracy_report_20260711_015657.md"
+  },
+  "run": 15,
+  "course": 1,
+  "course_name": "Course 1: Straight Navigation Channel",
+  "mode": "headless"
+}

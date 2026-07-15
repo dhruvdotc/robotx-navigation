@@ -32,7 +32,7 @@ Frame
 
 ---
 
-## Stage 1 — Shape proposals (color-agnostic)
+## Stage 1 - Shape proposals (color-agnostic)
 
 **File:** `camera_live_feed.py` lines 381–418, `hsv_batch_detect.py` `_proposal_contours()`
 
@@ -60,7 +60,7 @@ Size gating is the primary false-positive suppressor. At 10 m AGL with a 0.32 m 
 
 ---
 
-## Stage 2 — HSV color classification
+## Stage 2 - HSV color classification
 
 **File:** `camera_live_feed.py` lines 419–460
 
@@ -96,7 +96,7 @@ Defined in `color_utils.py` (fallback) and derived dynamically from `captures/cl
 | green | 75–105 | 60 | 50 | Spring-green emissive; sim buoys at ~hue 81 |
 | blue | 100–130 | 80 | 60 | |
 
-> **Important:** the simulation README states green range as 75–99, but the actual code upper bound is **105**. Use 75–105 when discussing the code.
+> **Note:** green (75–105) and blue (100–130) hue ranges overlap between 100–105. A pixel in that band can pass both `inRange` checks if it also clears both S/V floors - worth keeping in mind if a single object is ever detected as both colors.
 
 When `captures/classes/` exists, `derive_class_hsv_ranges()` computes a median hue per color from the reference crops and applies `--hue-margin` (default ±12) around it, overriding the fallback.
 
@@ -116,15 +116,15 @@ Tracking reduces duplicate GPS reports for the same buoy across frames.
 
 | Flag | Default | Effect |
 |------|---------|--------|
-| `--altitude-m` | 10.0 | AGL altitude — scales expected buoy diameter |
+| `--altitude-m` | 10.0 | AGL altitude - scales expected buoy diameter |
 | `--target-diameter-m` | 0.32 | Expected buoy diameter in metres |
-| `--fx-px` | None (reads calibration file) | Override focal length; last-resort fallback is 1500 if no calibration file exists |
+| `--fx-px` | None (reads calibration file) | Override focal length; last-resort fallback matches the measured calibration (fx=1319.07) if no calibration file exists |
 | `--min-circularity` | 0.35 | Lower = accept more elongated shapes |
 | `--min-color-ratio` | 0.12 | Lower = accept less colorful ROIs |
 | `--track-gate-px` | 70.0 | Max centroid distance (px) to match a detection to an existing track |
 | `--max-track-missed` | 8 | Drop a track after this many consecutive missed frames |
 | `--calibration-file` | `calibration/camera_intrinsics_latest.json` | Intrinsics JSON path |
-| `--no-undistort` | off | Skip lens undistortion (always use in Gazebo — ogre2 renders clean pinhole) |
+| `--no-undistort` | off | Skip lens undistortion (always use in Gazebo - ogre2 renders clean pinhole) |
 
 ---
 

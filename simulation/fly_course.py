@@ -44,14 +44,26 @@ COURSE_WAYPOINTS = {
     ],
     2: [
         # Course 2: lawnmower sweep over 60x30 m open-water survey field.
-        # Three E-W strips at N=-15, 0, +15 ensure every scattered buoy is
-        # overflown within ~8 m of nadir at 10 m AGL (60-deg FOV).
-        (- 15.0,  0.0,  "strip 1 start"),
-        (- 15.0, 60.0,  "strip 1 end"),
-        (   0.0, 60.0,  "strip 2 start"),
-        (   0.0,  0.0,  "strip 2 end"),
-        (+ 15.0,  0.0,  "strip 3 start"),
-        (+ 15.0, 60.0,  "strip 3 end"),
+        # The drone holds a fixed North heading throughout (WP_YAW_BEHAVIOR=0,
+        # it does not yaw to face each East-West leg), so the binding
+        # cross-track reach on these E-W strips is the camera's narrower
+        # VERTICAL FOV (~4.1 m at 10 m AGL), not the ~7.3 m horizontal one --
+        # see simulation/README.md's FOV note. The old 3-strip layout (N=-15,
+        # 0, +15; 7.5 m half-spacing) relied on the wrong, wider number and
+        # left buoys near N=+-7/+-8 with ~0 m of real margin (confirmed missed
+        # in practice). 5 strips at 6 m spacing (3 m half-spacing, ~1.1 m
+        # margin under 4.1 m) guarantee every point in the +-15 m field is
+        # actually within camera range.
+        (-12.0,  0.0,  "strip 1 start"),
+        (-12.0, 60.0,  "strip 1 end"),
+        (- 6.0, 60.0,  "strip 2 start"),
+        (- 6.0,  0.0,  "strip 2 end"),
+        (  0.0,  0.0,  "strip 3 start"),
+        (  0.0, 60.0,  "strip 3 end"),
+        (+ 6.0, 60.0,  "strip 4 start"),
+        (+ 6.0,  0.0,  "strip 4 end"),
+        (+12.0,  0.0,  "strip 5 start"),
+        (+12.0, 60.0,  "strip 5 end"),
     ],
     3: [
         # Course 3: L-shaped dogleg -- East then North.

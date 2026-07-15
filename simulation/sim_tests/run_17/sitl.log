@@ -1,0 +1,11 @@
+RiTW: Starting ArduCopter : /home/dhruv/ardupilot/build/sitl/bin/arducopter --model JSON --speedup 1 --slave 0 --sim-address=127.0.0.1 -I0
+SIM_VEHICLE: Start
+SIM_VEHICLE: Killing tasks
+SIM_VEHICLE: Starting up at SITL location
+SIM_VEHICLE: Run ArduCopter
+SIM_VEHICLE: "/home/dhruv/ardupilot/Tools/autotest/run_in_terminal_window.sh" "ArduCopter" "/home/dhruv/ardupilot/build/sitl/bin/arducopter" "--model" "JSON" "--speedup" "1" "--slave" "0" "--sim-address=127.0.0.1" "-I0"
+SIM_VEHICLE: Run MavProxy
+SIM_VEHICLE: "mavproxy.py" "--retries" "5" "--out" "172.24.112.1:14550" "--master" "tcp:127.0.0.1:5760" "--sitl" "127.0.0.1:5501" "--daemon" "--out" "udp:127.0.0.1:14550" "--out" "udp:127.0.0.1:14551" "--out" "udp:127.0.0.1:14552"
+[Run MavProxy] An exception has occurred with command: 'mavproxy.py --retries 5 --out 172.24.112.1:14550 --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --daemon --out udp:127.0.0.1:14550 --out udp:127.0.0.1:14551 --out udp:127.0.0.1:14552'
+[Errno 2] No such file or directory: 'mavproxy.py'
+SIM_VEHICLE: Killing tasks

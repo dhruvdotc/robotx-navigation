@@ -1,0 +1,5 @@
+Best epoch: 100
+Train loss at best epoch: 1.801
+Val loss at best epoch:   1.295
+Gap (val - train): -0.506
+VERDICT: HEALTHY

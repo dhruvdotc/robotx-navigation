@@ -1,5 +1,5 @@
 #!/bin/bash
-# Mac ground station — run on GL-AXT1800-99a WiFi (same network as Jetson 192.168.8.136)
+# Mac ground station - run on GL-AXT1800-99a WiFi (same network as Jetson 192.168.8.136)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

@@ -53,10 +53,22 @@ def main() -> int:
         print(f"Dataset YAML not found: {dataset_yaml}")
         return 1
     dataset_yaml_abs = os.path.join(dataset_dir, "dataset_abs.yaml")
+    dataset_dir_posix = dataset_dir.replace("\\", "/")
+    # Mirror the real split when 01_autolabel.py produced one (images/train +
+    # images/val from the raw-level split in 00_preprocess_training_data.py).
+    # The old hardcoded train=val=images meant every mAP printed during this
+    # script's training was an in-sample number; with the split present, the
+    # per-epoch val metrics here are already honest held-out numbers.
+    if os.path.isdir(os.path.join(dataset_dir, "images", "train")):
+        train_rel, val_rel = "images/train", "images/val"
+    else:
+        train_rel = val_rel = "images"
+        print("[WARN] Flat dataset (train == val): reported mAP is in-sample. "
+              "Re-run 00_preprocess + 01_autolabel for a leak-proof split.")
     with open(dataset_yaml_abs, "w", encoding="utf-8") as f:
-        f.write(f"path: {dataset_dir.replace('\\', '/')}\n")
-        f.write("train: images\n")
-        f.write("val: images\n")
+        f.write(f"path: {dataset_dir_posix}\n")
+        f.write(f"train: {train_rel}\n")
+        f.write(f"val: {val_rel}\n")
         f.write("nc: 3\n")
         f.write("names: ['red', 'green', 'blue']\n")
 
@@ -67,12 +79,15 @@ def main() -> int:
     model = YOLO("yolo11n.pt")
     model.train(
         data=dataset_yaml_abs,
-        epochs=30,
+        # Generous ceiling; patience is the real stopping criterion (stops
+        # once val mAP hasn't improved for 15 epochs, keeps best.pt).
+        epochs=100,
         imgsz=640,
         batch=8,
         project=train_project,
         name=train_name,
-        patience=10,
+        patience=15,
+        workers=4,  # WSL2: default 8 train + 8 val loaders oversubscribe the box
         exist_ok=True,
     )
 

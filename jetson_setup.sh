@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# jetson_setup.sh — run once on the Jetson Orin Nano to prepare the detection pipeline.
+# jetson_setup.sh - run once on the Jetson Orin Nano to prepare the detection pipeline.
 # Usage: bash jetson_setup.sh
 set -euo pipefail
 
@@ -36,6 +36,16 @@ pip install --quiet \
     future
 
 echo ""
+echo "=== [3b/5] ultralytics (YOLO inference) ==="
+# NOTE: this pulls in a generic PyPI torch wheel, which on Jetson's ARM64 +
+# CUDA stack often does NOT have working GPU acceleration. For real on-device
+# inference speed, follow NVIDIA's JetPack-matched PyTorch wheel install
+# instructions first, then `pip install --no-deps ultralytics` here instead.
+# Left as a plain pip install for now since no CUDA-optimized build has been
+# verified against this Jetson's JetPack version yet.
+pip install --quiet ultralytics
+
+echo ""
 echo "=== [4/5] MAVCore (vendor clone) ==="
 MAVCORE_DIR="$REPO_DIR/vendor/mavcore"
 if [ ! -d "$MAVCORE_DIR/.git" ]; then
@@ -44,7 +54,7 @@ if [ ! -d "$MAVCORE_DIR/.git" ]; then
     echo "Cloned MAVCore into $MAVCORE_DIR"
 else
     echo "MAVCore already cloned, pulling latest..."
-    git -C "$MAVCORE_DIR" pull --ff-only || echo "(pull failed — using cached version)"
+    git -C "$MAVCORE_DIR" pull --ff-only || echo "(pull failed - using cached version)"
 fi
 
 echo ""

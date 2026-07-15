@@ -1,0 +1,72 @@
+
+A module that was compiled using NumPy 1.x cannot be run in
+NumPy 2.2.6 as it may crash. To support both 1.x and 2.x
+versions of NumPy, modules must be compiled with NumPy 2.0.
+Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
+
+If you are a user of the module, the easiest solution will be to
+downgrade to 'numpy<2' or try to upgrade the affected module.
+We expect that some modules will need time to support NumPy 2.
+
+Traceback (most recent call last):  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/accuracy_verify.py", line 534, in <module>
+    sys.exit(main())
+  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/accuracy_verify.py", line 403, in main
+    from cv_bridge import CvBridge
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/cv_bridge/__init__.py", line 6, in <module>
+    from cv_bridge.boost.cv_bridge_boost import cvtColorForDisplay, getCvType
+AttributeError: _ARRAY_API not found
+[INFO] ground truth: 7 buoys from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/gazebo/worlds/robotx_uav_course.sdf
+       gate1_green    green  N=+1.25 E=+10.00
+       gate1_red      red    N=-1.25 E=+10.00
+       gate2_green    green  N=+1.25 E=+25.00
+       gate2_red      red    N=-1.25 E=+25.00
+       gate3_green    green  N=+1.25 E=+40.00
+       gate3_red      red    N=-1.25 E=+40.00
+       light_buoy     light  N=+0.00 E=+50.00
+Classes directory missing or empty: /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/captures/classes
+Using fallback HSV ranges:
+Fallback HSV ranges:
+  red[0] low=(0, 100, 70) high=(10, 255, 255)
+  red[1] low=(170, 100, 70) high=(179, 255, 255)
+  green[0] low=(75, 60, 50) high=(105, 255, 255)
+  blue[0] low=(100, 80, 60) high=(130, 255, 255)
+[INFO] Loaded camera calibration from /mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/calibration/camera_intrinsics_latest.json (fx=1319.07, fy=1407.50, cx=870.93, cy=533.10, RMS=1.057px)
+[INFO] connecting telemetry on udp:127.0.0.1:14551 ...
+[INFO] telemetry connected.
+[INFO] intrinsics[calibration-file(no-undistort)] fx=1319.1
+[INFO] verifying... fly the course now. Ctrl-C to finish (or it auto-finishes on disarm).
+
+A module that was compiled using NumPy 1.x cannot be run in
+NumPy 2.2.6 as it may crash. To support both 1.x and 2.x
+versions of NumPy, modules must be compiled with NumPy 2.0.
+Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
+
+If you are a user of the module, the easiest solution will be to
+downgrade to 'numpy<2' or try to upgrade the affected module.
+We expect that some modules will need time to support NumPy 2.
+
+Traceback (most recent call last):  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/accuracy_verify.py", line 534, in <module>
+    sys.exit(main())
+  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/accuracy_verify.py", line 502, in main
+    rclpy.spin_once(node, timeout_sec=0.2)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 208, in spin_once
+    executor.spin_once(timeout_sec=timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 808, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 803, in _spin_once_impl
+    handler()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/task.py", line 256, in __call__
+    self._execute_coroutine_step(self._handler)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/task.py", line 272, in _execute_coroutine_step
+    result = coro.send(None)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 488, in handler
+    await call_coroutine(entity, arg)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 407, in _execute_subscription
+    await await_or_execute(sub.callback, msg)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 110, in await_or_execute
+    return callback(*args)
+  File "/mnt/c/Users/dhruv/Downloads/robotx-navigation-main/robotx-navigation-main/simulation/accuracy_verify.py", line 439, in cb
+    img = self.b.imgmsg_to_cv2(msg, "bgr8")
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/cv_bridge/core.py", line 194, in imgmsg_to_cv2
+    res = cvtColor2(im, img_msg.encoding, desired_encoding)
+AttributeError: _ARRAY_API not found

@@ -1,0 +1,5 @@
+path: ./path2_dataset
+train: images/train
+val: images/val
+nc: 3
+names: ['red', 'green', 'blue']

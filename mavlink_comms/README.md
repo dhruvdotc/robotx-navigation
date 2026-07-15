@@ -32,13 +32,13 @@ This installs `pymavlink` and clones [MAVCore](https://github.com/uci-uav-forge/
 
 Uses UDP port **14555** so it does not conflict with ArduPilot SITL on 14550.
 
-**Terminal 1 — ground station (laptop):**
+**Terminal 1 - ground station (laptop):**
 
 ```bash
 python mavlink_comms/scripts/run_ground_station.py
 ```
 
-**Terminal 2 — mock onboard sender:**
+**Terminal 2 - mock onboard sender:**
 
 ```bash
 python mavlink_comms/scripts/run_mock_sender.py

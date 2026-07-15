@@ -6,7 +6,7 @@ Everything needed to run the pipeline from scratch on each platform.
 
 ## Mac (ground station only)
 
-The Mac only runs the ground station receiver — no heavy dependencies.
+The Mac only runs the ground station receiver - no heavy dependencies.
 
 ```bash
 # Python 3.10+ with pymavlink
@@ -43,7 +43,7 @@ pip3 install opencv-python numpy pymavlink
 ### 2. ROS 2 Humble
 
 ```bash
-# Standard ROS 2 Humble install — https://docs.ros.org/en/humble/Installation.html
+# Standard ROS 2 Humble install - https://docs.ros.org/en/humble/Installation.html
 source /opt/ros/humble/setup.bash
 ```
 
@@ -116,11 +116,11 @@ cd ~/robotx-navigation
 bash jetson_setup.sh
 ```
 
-`jetson_setup.sh` installs: `python3-opencv` (from apt), `numpy`, `pymavlink`, `future`, and clones the MAVCore vendor library. It creates `.venv-mavlink` — activate it before running any Python scripts.
+`jetson_setup.sh` installs: `python3-opencv` (from apt), `numpy`, `pymavlink`, `future`, `ultralytics`, and clones the MAVCore vendor library. It creates `.venv-mavlink` - activate it before running any Python scripts.
 
-> **`ultralytics` is NOT installed by `jetson_setup.sh`** — it must be installed separately once the YOLO integration is ready (see TODO #2 in roadmap): `pip install ultralytics`.
+> **Note:** the `ultralytics` install pulls a generic PyPI torch wheel, which is not guaranteed to use Jetson's GPU. For real on-device inference speed, install a JetPack-matched PyTorch build first, then `pip install --no-deps ultralytics` to avoid overwriting it.
 
-Make sure `captures/classes/` exists at `~/robotx-navigation/captures/classes/` with reference crops (`red.jpg`, `green.jpg`, `blue.jpg`) — `camera_live_feed.py` loads HSV ranges from this directory at startup.
+Make sure `captures/classes/` exists at `~/robotx-navigation/captures/classes/` with reference crops (`red.jpg`, `green.jpg`, `blue.jpg`) - `camera_live_feed.py` loads HSV ranges from this directory at startup.
 
 ### WiFi setup (field router)
 
@@ -140,7 +140,7 @@ bash scripts/jetson_probe_from_laptop.sh  # verify connectivity from Mac
 | Python | 3.10 |
 | ROS 2 | Humble (`/opt/ros/humble`) |
 | Gazebo | Harmonic (`GZ_VERSION=harmonic`) |
-| ArduPilot SITL | `~/ardupilot` — ArduCopter, `gazebo-iris` frame |
+| ArduPilot SITL | `~/ardupilot` - ArduCopter, `gazebo-iris` frame |
 | ardupilot_gazebo | `~/ardupilot_gazebo` (`build/*.so`) |
 | VRX | `~/vrx_ws/install/vrx_gz` |
 | Render engine | ogre2 |

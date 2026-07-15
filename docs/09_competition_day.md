@@ -4,7 +4,7 @@ Sequence from arriving on-site to flying. Read [06_real_flight.md](06_real_fligh
 
 ---
 
-## Phase 1 — Arrive & collect images (1–2 hours before flight)
+## Phase 1 - Arrive & collect images (1–2 hours before flight)
 
 Goal: capture enough images at actual venue lighting to retrain the model.
 
@@ -25,11 +25,11 @@ yolo_comparison_test/path2_switch_proposal/captures/classes/
 ├── green.jpg
 └── blue.jpg
 ```
-The filename stem is how the code identifies the color — other names are ignored. Copy all raw captures (flat) into `yolo_comparison_test/path2_switch_proposal/captures/`.
+The filename stem is how the code identifies the color - other names are ignored. Copy all raw captures (flat) into `yolo_comparison_test/path2_switch_proposal/captures/`.
 
 ---
 
-## Phase 2 — Auto-label & train (Mac, ~20–30 min)
+## Phase 2 - Auto-label & train (Mac, ~20–30 min)
 
 ```bash
 cd ~/Downloads/ROBOTX/robotx-navigation/yolo_comparison_test/path2_switch_proposal/scripts
@@ -38,7 +38,7 @@ cd ~/Downloads/ROBOTX/robotx-navigation/yolo_comparison_test/path2_switch_propos
 python 01_autolabel.py
 cat path2_dataset/autolabel_summary.txt    # verify box counts look right
 
-# 2. Train (runs in background — ~10-20 min on Mac)
+# 2. Train (runs in background - ~10-20 min on Mac)
 python 02_finetune.py
 
 # 3. Validate (run all 5 steps)
@@ -56,7 +56,7 @@ cat honest_results.txt    # mAP50 should be > 0.80
 
 ---
 
-## Phase 3 — Export ONNX and deploy to Jetson
+## Phase 3 - Export ONNX and deploy to Jetson
 
 `run_detection_jetson.sh` looks for `buoy_best.onnx`, not `.pt`. Export first:
 
@@ -73,24 +73,24 @@ scp yolo_comparison_test/path2_switch_proposal/scripts/training/balloon_proper/w
     babydragon@<JETSON_IP>:~/robotx-navigation/buoy_best.onnx
 ```
 
-> **YOLO integration is TODO #2** — until done, the ONNX file won't be called by the run script automatically. Skip this phase for now and run `camera_live_feed.py` directly in Phase 5.
+> **YOLO integration (TODO #2) is implemented** - `run_detection_jetson.sh` now picks up `buoy_best.onnx` automatically via `--yolo-model`. It hasn't been verified with a live camera/model yet (implemented without network access to install `ultralytics`), so treat Phase 5's direct `camera_live_feed.py` HSV invocation as the proven fallback if the YOLO one-liner misbehaves on the day.
 
 ---
 
-## Phase 4 — Network setup
+## Phase 4 - Network setup
 
 Pick one:
 
-**Option A — WiFi router (preferred):**
+**Option A - WiFi router (preferred):**
 ```bash
 # Jetson
 bash scripts/jetson_wifi_setup.sh    # connect to field router
 
-# Mac — find your IP
+# Mac - find your IP
 ipconfig getifaddr en0
 ```
 
-**Option B — USB-C (fallback):**
+**Option B - USB-C (fallback):**
 ```bash
 sudo ifconfig en10 192.168.55.100 netmask 255.255.255.0
 ping 192.168.55.1
@@ -98,9 +98,9 @@ ping 192.168.55.1
 
 ---
 
-## Phase 5 — Start pipeline
+## Phase 5 - Start pipeline
 
-**Mac (Terminal 1) — Ground station:**
+**Mac (Terminal 1) - Ground station:**
 ```bash
 cd ~/Downloads/ROBOTX/robotx-navigation
 bash fulldemo/run_gcs_mac.sh
@@ -108,7 +108,7 @@ bash fulldemo/run_gcs_mac.sh
 Wait for: `Listening UDP 14555 for buoy reports`
 Detections auto-save to `fulldemo/detections.jsonl`.
 
-**Jetson (Terminal 2) — Detector (HSV pipeline, current state):**
+**Jetson (Terminal 2) - Detector, HSV fallback (proven, no MAVLink TX):**
 ```bash
 ssh babydragon@<JETSON_IP>
 cd ~/robotx-navigation
@@ -123,22 +123,25 @@ python3 camera_live_feed.py \
 ```
 Wait for: `Using camera index: 0` then `[INFO] Active intrinsics [...]`
 
-> Once **TODO #2** (YOLO integration) is complete, replace the above with: `GCS_IP=<MAC_IP> bash fulldemo/run_detection_jetson.sh`
+**Or, YOLO + MAVLink TX one-liner (TODO #2 flags implemented, not yet field-verified):**
+```bash
+GCS_IP=<MAC_IP> bash fulldemo/run_detection_jetson.sh
+```
 
 **Verify:** point camera at a buoy and confirm `[GPS]` lines appear in the Jetson terminal.
 
 ---
 
-## Phase 6 — Tune if needed
+## Phase 6 - Tune if needed
 
 | Problem | Fix |
 |---------|-----|
 | No detections | Lower `--min-color-ratio 0.08`, aim camera at buoy directly |
 | Wrong color | Re-run with `--calib-color <color>`, aim center at buoy, press `c` |
 | False positives everywhere | Raise `--min-color-ratio 0.18` or `--min-circularity 0.4` |
-| GCS not receiving | YOLO/MAVLink TX is TODO #2 — GCS link not wired to current HSV pipeline |
+| GCS not receiving | Only wired when running with `--gcs-ip` (i.e. via `run_detection_jetson.sh`); the plain HSV `camera_live_feed.py` invocation never transmits |
 
-**Quick HSV recalibration (needs display — omit `--no-display`):**
+**Quick HSV recalibration (needs display - omit `--no-display`):**
 ```bash
 python3 camera_live_feed.py --camera-index 0 --altitude-m 10 --calib-color green
 # Aim center of frame at green buoy, press 'c'
@@ -146,14 +149,14 @@ python3 camera_live_feed.py --camera-index 0 --altitude-m 10 --calib-color green
 
 ---
 
-## Phase 7 — Save session data after flight
+## Phase 7 - Save session data after flight
 
 ```bash
 rsync -av babydragon@<JETSON_IP>:~/detection_logs/ \
   ~/Downloads/ROBOTX/robotx-navigation/fulldemo/session_data/
 ```
 
-**Visualize results (requires TODO #2 — MAVLink TX):**
+**Visualize results (only populated if you ran with `--gcs-ip`, i.e. via `run_detection_jetson.sh`):**
 ```bash
 python fulldemo/visualize_detections.py fulldemo/detections.jsonl
 ```
@@ -162,7 +165,7 @@ python fulldemo/visualize_detections.py fulldemo/detections.jsonl
 
 ## Altitude reminder
 
-The GPS projection assumes **10 m AGL** by default. If you fly at a different altitude, pass `--altitude-m <value>` to `camera_live_feed.py` directly (see Phase 5). There is no altitude flag in `run_detection_jetson.sh` — that script hardcodes `altitude_m=10`.
+The GPS projection assumes **10 m AGL** by default. If you fly at a different altitude, pass `--altitude-m <value>` to `camera_live_feed.py` directly (see Phase 5). There is no altitude flag in `run_detection_jetson.sh` - that script hardcodes `altitude_m=10`.
 
 ---
 
@@ -170,8 +173,8 @@ The GPS projection assumes **10 m AGL** by default. If you fly at a different al
 
 - [ ] `captures/classes/` on Jetson has today's reference crops (red.jpg, green.jpg, blue.jpg)
 - [ ] GCS running and printing `Listening UDP 14555 for buoy reports` (Mac terminal)
-- [ ] Jetson detector running — `[GPS]` lines appear when camera points at buoy
+- [ ] Jetson detector running - `[GPS]` lines appear when camera points at buoy
 - [ ] `--altitude-m` matches your planned flight altitude (pass to `camera_live_feed.py`)
 - [ ] `~/detection_logs/` cleared or new `--log-dir` set for this session
 - [ ] Team knows which terminal to watch for `[GPS]` detections (Jetson terminal)
-- [ ] **TODO #2 pending:** MAVLink TX not yet wired — GCS won't receive reports until YOLO integration is done
+- [ ] If using MAVLink TX (`run_detection_jetson.sh` / `--gcs-ip`): confirmed it actually reaches the GCS in a dry run - this path is implemented but not yet field-verified

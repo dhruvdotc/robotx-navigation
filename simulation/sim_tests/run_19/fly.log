@@ -1,0 +1,24 @@
+[FLY 19:06:05] Course 2: 6 waypoints.
+[FLY 19:06:05] connecting to udp:127.0.0.1:14550 ...
+[FLY 19:06:05] heartbeat from system 1 component 0.
+[FLY 19:06:05] waiting for GPS fix / EKF position...
+[FLY 19:06:05] GPS/position OK (lat=-35.363262, lon=149.165215, alt=0.0 m)
+[FLY 19:06:05] set WP_YAW_BEHAVIOR = 0
+[FLY 19:06:07] arming (retrying until ACCEPTED; first tries often fail while EKF settles)...
+[FLY 19:06:07] ARMED (COMMAND_ACK ACCEPTED).
+[FLY 19:06:07] takeoff accepted; climbing to 10.0 m...
+[FLY 19:06:16] reached 9.65 m.
+[FLY 19:06:16] -> strip 1 start (N=-15.0, E=0.0), dist=15.0 m
+[FLY 19:06:30]    reached strip 1 start -- held 4.0s.
+[FLY 19:06:30] -> strip 1 end (N=-15.0, E=60.0), dist=60.0 m
+[FLY 19:07:14]    reached strip 1 end -- held 4.0s.
+[FLY 19:07:14] -> strip 2 start (N=0.0, E=60.0), dist=15.0 m
+[FLY 19:07:28]    reached strip 2 start -- held 4.0s.
+[FLY 19:07:28] -> strip 2 end (N=0.0, E=0.0), dist=60.0 m
+[FLY 19:08:12]    reached strip 2 end -- held 4.0s.
+[FLY 19:08:12] -> strip 3 start (N=15.0, E=0.0), dist=15.0 m
+[FLY 19:08:26]    reached strip 3 start -- held 4.0s.
+[FLY 19:08:26] -> strip 3 end (N=15.0, E=60.0), dist=60.0 m
+[FLY 19:09:10]    reached strip 3 end -- held 4.0s.
+[FLY 19:09:10] course complete.
+[FLY 19:09:10] LAND.

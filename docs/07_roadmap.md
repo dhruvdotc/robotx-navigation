@@ -19,23 +19,34 @@ Goal: full end-to-end cycle (capture → annotate → train → deploy → test)
 - [x] MAVLink buoy report protocol + UDP ground station (`mavlink_comms/`)
 - [x] Full Gazebo Harmonic SITL stack (3 courses: straight, lawnmower, L-shaped dogleg)
 - [x] Distractor obstacles in all sim courses (olive panels, orange crates, gray barrels/panels)
-- [x] Augmentation smoke test (`augment_test.py` — blur + motion blur + glare hotspots)
+- [x] Augmentation smoke test (`augment_test.py` - blur + motion blur + glare hotspots)
 - [x] Batch detection + metrics pipeline (`hsv_batch_detect.py`, `metrics_summary.py`, `visualize_results.py`)
 - [x] One-command field demo scripts (`fulldemo/`)
 - [x] Simulation accuracy report: 6/6 buoys detected, mean error 0.16 m, max 1.04 m (Course 1, 10 m AGL)
-- [x] CLAHE on V channel before HSV thresholding — `apply_clahe_to_v()` called unconditionally in `camera_live_feed.py` main loop (line 570)
+- [x] CLAHE on V channel before HSV thresholding - `apply_clahe_to_v()` in `camera_live_feed.py`, applied unconditionally on the HSV path; skipped on the YOLO path (`--yolo-model`) to avoid a distribution shift vs. the un-normalized images the model was fine-tuned on
 - [x] Documentation (`docs/`)
+- [x] YOLO fine-tuning + honest validation pipeline (`yolo_comparison_test/path2_switch_proposal/scripts/01_autolabel.py` → `02_finetune.py` → `validation_step1-5_*.py`); real checked-in weights, held-out mAP50 = 0.968
+- [x] YOLO inference wired into `camera_live_feed.py` (`--yolo-model`, `--yolo-conf`) plus the rest of TODO #2's flags (`--gcs-ip`, `--save-video`, `--drone-lat`/`--drone-lon`, `--heading-deg`, `--headless`) - unblocks `fulldemo/run_detection_jetson.sh`. Not yet run live (no network in the dev sandbox that wrote it to install `ultralytics`) - verify with a real camera/model before field use.
+- [x] `visualize_results.py` reads stats from `detections.csv` dynamically instead of a hard-coded run
+- [x] Scan-the-Code light buoy color cycling in all 3 sim courses (`simulation/light_buoy_cycler.py`, launched by `run_course.sh`) - entity spawn/swap, because gz-sim Harmonic's `visual_config` material changes never reach the sensor render scene
+- [x] Train/val split leakage fixed at the root: `00_preprocess_training_data.py` splits RAW captures before augmentation (recorded in `split_manifest.txt`); `01_autolabel.py`/`02_finetune.py`/`validation_step1` preserve the split
+- [x] Sim-trained 3-class model (red/green/BLUE) with honest held-out validation: mAP50 0.991, overfit check HEALTHY - see `yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/README.md` including its caveats (weak-label GT errors, sim-only imagery)
+- [x] `cv_bridge` NumPy-2 ABI segfault fixed: `camera_live_feed.py` and `accuracy_verify.py` decode rgb8 ROS images manually with numpy
 
 ---
 
 ## In Progress 🔄
 
-- [ ] YOLO model training pipeline — documentation written (`08_annotation_and_training.md`); code improvements pending (auto-validation, integrated train loop — see TODO #4)
-- [ ] `visualize_results.py` — currently has hard-coded stats from 6/26 run; needs to read from CSV dynamically
+- [ ] Auto-validation in the training loop itself (see TODO #4 below) - the 5-step validation pipeline exists but is run manually, not integrated into `02_finetune.py`
+- [ ] Real-photo fine-tune: the sim-trained 3-class model exists but all its data is Gazebo renders; real venue photos remain the missing ingredient before field use
+- [ ] IMU pitch/roll compensation in GPS projection (yaw/heading is now handled via `--heading-deg`; pitch/roll is not)
+- [ ] Autolabel quality audit: found systematic weak-label errors (double red+green boxes on one object, a missed fully-saturated red buoy in `results_sim_courses_v2` val, see its README) - model metrics measure agreement with these labels, so spot-fix labels or build a small human-verified test set
+- [ ] Normalization mismatch: training images get Phase-2 color normalization but `camera_live_feed.py --yolo-model` feeds raw frames; apply the same normalization at inference or retrain without it
+- [ ] Detector Stage-1 is grayscale-Canny only: a bright blue object on blue-green water produces no edge (measured in sim; same physics on real water where blue is already the weakest class) - a saturation-aware proposal channel would fix a real blind spot
 
 ---
 
-## TODO — Priority order
+## TODO - Priority order
 
 ### 1. Improve augmentation pipeline
 **File:** `augment_test.py` / `apply_uav_noise()`
@@ -58,9 +69,11 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 
 ### 2. Flexible model weights + HSV thresholds
 
-**Problem:** swapping to a new `best.pt` or changing HSV thresholds requires editing code or passing long flags.
+**Status:** `--yolo-model`/`--yolo-conf` now exist and switch `camera_live_feed.py` onto a YOLO detection path at runtime (no code edits needed) - see Completed above. Swapping models is now a CLI flag, not a code change.
 
-**Suggestions:**
+**Problem still open:** every run still needs its own long flag list; there's no saved preset.
+
+**Suggestions (not yet implemented):**
 - Add a config JSON (`config/detection_config.json`) that specifies `model_path`, `yolo_conf`, `hsv_ranges`, `min_color_ratio`, `altitude_m`, `target_diameter_m`
 - `camera_live_feed.py` and `run_detection_jetson.sh` read from config by default; command-line flags override
 - Makes it easy to version-control different tuning presets (e.g. `config/sunny_day.json`, `config/overcast.json`)
@@ -95,16 +108,16 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 
 ### 5. Documentation (this folder)
 
-- [x] `00_index.md` — index + quick-start cheat sheet
-- [x] `01_environment_setup.md` — Mac, Ubuntu/WSL, Jetson setup
-- [x] `02_data_pipeline.md` — capture → augment → detect → metrics
-- [x] `03_detection_algorithm.md` — two-stage CV deep-dive
-- [x] `04_gps_projection.md` — pixel → NED → GPS math + calibration
-- [x] `05_simulation.md` — Gazebo SITL, 3 courses
-- [x] `06_real_flight.md` — Jetson + GCS full demo
-- [x] `07_roadmap.md` — this file
-- [x] `08_annotation_and_training.md` — YOLO annotation + training pipeline
-- [x] `09_competition_day.md` — competition day cheat sheet
+- [x] `00_index.md` - index + quick-start cheat sheet
+- [x] `01_environment_setup.md` - Mac, Ubuntu/WSL, Jetson setup
+- [x] `02_data_pipeline.md` - capture → augment → detect → metrics
+- [x] `03_detection_algorithm.md` - two-stage CV deep-dive
+- [x] `04_gps_projection.md` - pixel → NED → GPS math + calibration
+- [x] `05_simulation.md` - Gazebo SITL, 3 courses
+- [x] `06_real_flight.md` - Jetson + GCS full demo
+- [x] `07_roadmap.md` - this file
+- [x] `08_annotation_and_training.md` - YOLO annotation + training pipeline
+- [x] `09_competition_day.md` - competition day cheat sheet
 
 ---
 
@@ -112,13 +125,13 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 
 | Issue | File | Notes |
 |-------|------|-------|
-| Green HSV range: README says 75–99, code is 75–105 | `color_utils.py` line 21, `simulation/README.md` lines 230/244 | Fix README to say 75–105, or tighten code to 99 |
-| `visualize_results.py` has hard-coded stats | `visualize_results.py` top constants | Should read from `captures/hsv_results/detections.csv` dynamically |
-| No IMU attitude correction in GPS projection | `camera_live_feed.py` `project_pixel_to_ground_ned()` | Assumes perfect nadir; pitch/roll during flight adds lateral error |
-| `--fx-px` default (1500) diverges from calibration (1319) | `camera_live_feed.py` arg default | Always pass `--calibration-file` flag; default is a fallback only |
-| **`run_detection_jetson.sh` passes flags that don't exist in `camera_live_feed.py`** | `fulldemo/run_detection_jetson.sh` + `camera_live_feed.py` | Flags `--yolo-model`, `--gcs-ip`, `--save-video`, `--drone-lat`, `--drone-lon`, `--heading-deg`, `--headless` are planned for YOLO integration (TODO #2). Script will crash until then. Run `camera_live_feed.py` directly. |
-| **`run_detection_jetson.sh` looks for `buoy_best.onnx`, not `.pt`** | `fulldemo/run_detection_jetson.sh` lines 11–19 | Export trained model with `model.export(format='onnx')` and copy as `buoy_best.onnx`; see `08_annotation_and_training.md` |
-| **`jetson_setup.sh` does not install `ultralytics`** | `jetson_setup.sh` | Install manually: `pip install ultralytics` in `.venv-mavlink` after setup |
+| ~~Green HSV range: README said 75–99, code is 75–105~~ | `simulation/README.md` lines 230/244 | **Fixed** - README now says 75–105 to match code. Newly noted: green (75–105) and blue (100–130) overlap between 100–105; see `03_detection_algorithm.md`. |
+| ~~`visualize_results.py` has hard-coded stats~~ | `visualize_results.py` | **Fixed** - reads `--csv-path`/`--captures-dir` dynamically (mirrors `metrics_summary.py`'s CSV logic). The before/after-ROI comparison panel now needs an explicit `--before-roi <count>` (from a separate unfiltered run) since final `detections.csv` alone can't reconstruct pre-filter candidate counts; without it, the panel just shows the current after-filter count. |
+| No IMU attitude correction in GPS projection | `camera_live_feed.py` `project_pixel_to_ground_ned()` | Still assumes perfect nadir; pitch/roll during flight adds lateral error. **Partially addressed**: the new `--heading-deg` rotates the projection for yaw (compass heading), which the sim never needed (flies yaw-locked at 0) but a real drone does. Pitch/roll compensation is still unimplemented. |
+| ~~`--fx-px` legacy fallback (1500) diverges from calibration (1319)~~ | `camera_live_feed.py` `LEGACY_FX_PX`/`LEGACY_FY_PX` | **Fixed** - legacy fallback now matches the measured calibration (fx=1319.07, fy=1407.50) instead of a guessed 1500. Still always pass `--calibration-file` in normal use; this only matters if that file is missing. |
+| ~~`run_detection_jetson.sh` passes flags that don't exist in `camera_live_feed.py`~~ | `fulldemo/run_detection_jetson.sh` + `camera_live_feed.py` | **Fixed** - `--yolo-model`, `--yolo-conf`, `--gcs-ip`, `--save-video`, `--drone-lat`/`--drone-lon` (aliases of `--origin-lat`/`--origin-lon`), `--heading-deg`, `--headless` (alias of `--no-display`) all now exist. `--yolo-model` swaps in a YOLO detection path (see `find_detections_yolo()`) in place of the two-stage HSV pipeline; `--gcs-ip` wires MAVLink STATUSTEXT TX via `mavlink_comms.transmitter.BuoyMavlinkTransmitter`. **Not yet verified with a live run** - this sandbox has no outbound network access, so `ultralytics`/`torch` couldn't be installed to smoke-test the YOLO path end-to-end; the code mirrors the exact `model(img, verbose=False)[0]` / `.boxes.conf/.cls/.xyxy` pattern already proven working in `02_finetune.py` and `validation_step3_val_inference.py`, but run it once for real before trusting it in the field. |
+| **`run_detection_jetson.sh` looks for `buoy_best.onnx`, not `.pt`** | `fulldemo/run_detection_jetson.sh` lines 11–19 | Still applies - export trained model with `model.export(format='onnx')` and copy as `buoy_best.onnx`; see `08_annotation_and_training.md`. (The script already falls back to `.pt` demo weights if no `.onnx` is found, so it won't hard-fail, just run unoptimized.) |
+| ~~`jetson_setup.sh` does not install `ultralytics`~~ | `jetson_setup.sh` | **Fixed** - step 3b now runs `pip install ultralytics`. Still uses a generic (non-JetPack) torch wheel; GPU-accelerated inference needs a manual JetPack-matched torch install first. |
 
 ---
 
@@ -126,13 +139,13 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 
 - [ ] Collect 30–50 raw images per color (red, green, blue) at actual venue lighting
 - [ ] Place one reference crop per color (named exactly `red.jpg`, `green.jpg`, `blue.jpg`) in both `captures/classes/` (for live detector) and `yolo_comparison_test/path2_switch_proposal/captures/classes/` (for training)
-- [ ] Run `python augment_test.py` — check retention rate ≥ 70%
-- [ ] Run `python hsv_batch_detect.py` — verify per-class detections in annotated images
-- [ ] Run `python metrics_summary.py` — minimal false positives, minimal missed images
+- [ ] Run `python augment_test.py` - check retention rate ≥ 70%
+- [ ] Run `python hsv_batch_detect.py` - verify per-class detections in annotated images
+- [ ] Run `python metrics_summary.py` - minimal false positives, minimal missed images
 - [ ] Train new model: `01_autolabel.py` → `02_finetune.py` → validation steps
-- [ ] Export ONNX and copy to Jetson as `buoy_best.onnx` (needed for `run_detection_jetson.sh` when TODO #2 is done)
+- [ ] Export ONNX and copy to Jetson as `buoy_best.onnx` (`run_detection_jetson.sh` now picks it up automatically - verify this actually runs before relying on it on competition day)
 - [ ] Set correct `--altitude-m` for your planned flight height
 - [ ] Confirm network link (ping Jetson from Mac)
-- [ ] Start GCS: `bash fulldemo/run_gcs_mac.sh` — wait for `Listening UDP 14555`
+- [ ] Start GCS: `bash fulldemo/run_gcs_mac.sh` - wait for `Listening UDP 14555`
 - [ ] Start detector on Jetson directly via `camera_live_feed.py` (see `09_competition_day.md`)
 - [ ] Verify `[GPS]` lines appear when camera points at buoy

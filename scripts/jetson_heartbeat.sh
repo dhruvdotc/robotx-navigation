@@ -17,7 +17,7 @@ stamp() {
 
 print_status() {
   echo "=============================================="
-  echo " JETSON ALIVE — $(stamp)"
+  echo " JETSON ALIVE - $(stamp)"
   echo "=============================================="
   echo "hostname:   $(hostname 2>/dev/null || echo unknown)"
   echo "uptime:     $(uptime 2>/dev/null || echo n/a)"
