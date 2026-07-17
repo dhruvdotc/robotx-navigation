@@ -6,7 +6,7 @@ Frame sources: live USB camera (default), a single video file
 
 Pixel detections are projected to a local ground frame (NED metres) and an
 absolute GPS coordinate using the camera intrinsics. Intrinsics are resolved
-with the precedence:  CLI override  >  calibration file  >  legacy fallback.
+with the precedence:  CLI override  >  calibration file  >  error (no hardcoded fallback).
 """
 
 import argparse
@@ -65,12 +65,10 @@ COLOR_DRAW = {
 }
 
 DEFAULT_CALIBRATION = "calibration/camera_intrinsics_latest.json"
-# Fallback focal lengths, only used if both the calibration file fails to load
-# AND no --fx-px/--fy-px override is given. Matches the measured checkerboard
-# calibration (calibration/camera_intrinsics_latest.json) instead of a guess,
-# so this worst-case path is still close to correct.
-LEGACY_FX_PX = 1319.071398
-LEGACY_FY_PX = 1407.4984
+# No hardcoded focal-length fallback. To swap cameras:
+#   1. Run a checkerboard calibration → produce a new JSON.
+#   2. Replace DEFAULT_CALIBRATION path, or pass --calibration-file.
+# All GPS projections flow exclusively from that file (or explicit CLI flags).
 
 
 def make_kalman(init_x: float, init_y: float) -> cv2.KalmanFilter:
@@ -112,20 +110,45 @@ def load_calibration(path: str) -> dict | None:
 def resolve_intrinsics(
     args: argparse.Namespace, calib: dict | None, width: int, height: int
 ) -> Intrinsics:
-    """Apply precedence CLI override > calibration file > legacy fallback.
+    """Resolve camera intrinsics with precedence: CLI override > calibration file > error.
 
-    Any explicit CLI intrinsic (--fx-px/--fy-px/--cx-px/--cy-px) switches to
-    manual mode: the calibration file (including its distortion model) is
-    bypassed entirely, reproducing the historical hard-coded pinhole path.
+    Plug-and-play camera swap:
+      • Replace calibration/camera_intrinsics_latest.json with the new camera's
+        checkerboard calibration output, OR
+      • Pass --calibration-file /path/to/new_intrinsics.json at the CLI.
+      All GPS projections then automatically use the new matrix — no source
+      changes required.
+
+    Manual override (pinhole-only, no distortion correction):
+      Pass --fx-px and --fy-px. Any missing values are filled from the
+      calibration file if one is available; cx/cy default to the image centre.
+      Both --fx-px AND --fy-px must be given if no calibration file is present.
     """
     cli_keys = [args.fx_px, args.fy_px, args.cx_px, args.cy_px]
     manual = any(v is not None for v in cli_keys)
 
     if manual:
-        fx = args.fx_px if args.fx_px is not None else LEGACY_FX_PX
-        fy = args.fy_px if args.fy_px is not None else LEGACY_FY_PX
-        cx = args.cx_px if args.cx_px is not None else width / 2.0
-        cy = args.cy_px if args.cy_px is not None else height / 2.0
+        # Fill any unspecified CLI values from the calibration file when available.
+        if calib is not None:
+            fx = args.fx_px if args.fx_px is not None else float(calib["fx"])
+            fy = args.fy_px if args.fy_px is not None else float(calib["fy"])
+            cx = args.cx_px if args.cx_px is not None else float(calib["cx"])
+            cy = args.cy_px if args.cy_px is not None else float(calib["cy"])
+        else:
+            missing = [name for name, val in [("--fx-px", args.fx_px), ("--fy-px", args.fy_px)]
+                       if val is None]
+            if missing:
+                print(
+                    f"[ERROR] {', '.join(missing)} must be provided when using CLI intrinsics "
+                    f"without a calibration file.\n"
+                    f"        Provide all focal lengths, or supply --calibration-file.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            fx = args.fx_px
+            fy = args.fy_px
+            cx = args.cx_px if args.cx_px is not None else width / 2.0
+            cy = args.cy_px if args.cy_px is not None else height / 2.0
         dist = np.zeros(5, dtype=np.float64)
         source = "cli-manual"
     elif calib is not None:
@@ -139,11 +162,20 @@ def resolve_intrinsics(
             dist = np.zeros(5, dtype=np.float64)
             source = "calibration-file(no-undistort)"
     else:
-        fx, fy = LEGACY_FX_PX, LEGACY_FY_PX
-        cx = width / 2.0
-        cy = height / 2.0
-        dist = np.zeros(5, dtype=np.float64)
-        source = "legacy-calibration-fallback"
+        # No calibration file AND no CLI intrinsics: refuse to guess.
+        # Silently wrong focal lengths corrupt every GPS projection.
+        print(
+            f"[ERROR] Camera calibration is required but could not be loaded.\n"
+            f"        To fix:\n"
+            f"          • Ensure {DEFAULT_CALIBRATION} exists  "
+            f"(for the current camera)\n"
+            f"          • Or pass --calibration-file /path/to/intrinsics.json  "
+            f"(to use a different camera)\n"
+            f"          • Or pass --fx-px <fx> --fy-px <fy>  "
+            f"(pinhole-only, skips distortion correction)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     K = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]], dtype=np.float64)
     return Intrinsics(fx=fx, fy=fy, cx=cx, cy=cy, dist=dist, K=K, source=source)
@@ -389,7 +421,7 @@ def parse_args() -> argparse.Namespace:
         "Rotates the pixel->NED projection accordingly; default 0 matches the sim, which always "
         "flies yaw-locked (WP_YAW_BEHAVIOR=0).",
     )
-    # Intrinsics: CLI override > calibration file > legacy fallback (LEGACY_FX_PX/LEGACY_FY_PX).
+    # Intrinsics: CLI override > calibration file > error (see resolve_intrinsics).
     parser.add_argument("--fx-px", type=float, default=None)
     parser.add_argument("--fy-px", type=float, default=None)
     parser.add_argument("--cx-px", type=float, default=None)

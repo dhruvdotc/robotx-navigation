@@ -55,7 +55,7 @@ def put_label(img: np.ndarray, text: str) -> np.ndarray:
 
 
 def channel_std(img: np.ndarray) -> float:
-    """Std-dev of per-channel means - high value = colour cast."""
+    """Std-dev of per-channel means — high value = colour cast."""
     return float(np.std([img[:, :, c].mean() for c in range(3)]))
 
 
@@ -128,5 +128,5 @@ if all_passed:
     print(f"ALL {len(sources)} FRAMES PASSED.  Grids in:")
     print(f"  {OUT_DIR}")
 else:
-    print("SOME FRAMES FAILED - see above.")
+    print("SOME FRAMES FAILED — see above.")
     sys.exit(1)

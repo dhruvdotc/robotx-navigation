@@ -1,0 +1,26 @@
+PREPROCESSING ABLATION RESULTS
+========================================================================================
+
+A  CLAHE-YUV + GW-WB + Gauss unsharp  [current]
+  Overall:  TP=94 FP=7 FN=0  P=0.931 R=1.000 F1=0.964
+  red   : P=0.904 R=1.000 F1=0.949
+  green : P=0.947 R=1.000 F1=0.973
+  blue  : P=1.000 R=1.000 F1=1.000
+
+B  CLAHE-LAB + GW-WB + Gauss unsharp             
+  Overall:  TP=94 FP=9 FN=0  P=0.913 R=1.000 F1=0.954
+  red   : P=0.870 R=1.000 F1=0.931
+  green : P=0.947 R=1.000 F1=0.973
+  blue  : P=1.000 R=1.000 F1=1.000
+
+C  CLAHE-YUV + GW-WB + Bilateral unsharp         
+  Overall:  TP=94 FP=8 FN=0  P=0.922 R=1.000 F1=0.959
+  red   : P=0.887 R=1.000 F1=0.940
+  green : P=0.947 R=1.000 F1=0.973
+  blue  : P=1.000 R=1.000 F1=1.000
+
+D  CLAHE-LAB + GW-WB + Bilateral unsharp [full]  
+  Overall:  TP=94 FP=8 FN=0  P=0.922 R=1.000 F1=0.959
+  red   : P=0.870 R=1.000 F1=0.931
+  green : P=0.973 R=1.000 F1=0.986
+  blue  : P=1.000 R=1.000 F1=1.000

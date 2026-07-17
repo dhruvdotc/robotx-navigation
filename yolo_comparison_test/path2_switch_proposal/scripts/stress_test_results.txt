@@ -1,0 +1,5 @@
+=== STRESS TEST (UAV noise simulation) ===
+Clean val:     detections=102  avg_conf=0.923  missed=1
+Augmented val: detections=103  avg_conf=0.910  missed=1
+Retention rate: 101.0%
+Confidence drop: 0.923 → 0.910
