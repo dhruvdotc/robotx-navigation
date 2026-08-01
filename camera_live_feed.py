@@ -18,11 +18,41 @@ import os
 import platform
 import sys
 import time
-from dataclasses import dataclass
+from collections import deque
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
 from color_utils import build_mask, color_normalize, is_off_buoy, load_color_ranges
+
+
+class TrackFlashState:
+    """P2: rolling ON/OFF history of a track, used to tell a flashing beacon from
+    a steady one (see docs/10_safe_passage.md). Each frame the tracker records
+    ON (the track matched a detection) or OFF (the track is alive but unmatched,
+    i.e. the light is dark this frame). The window is measured in FRAMES, not
+    seconds, so classification is deterministic offline and framerate-agnostic;
+    size it to a few flash periods (1 s on / 1 s off = ~2*fps frames per period).
+    """
+
+    def __init__(self, window: int = 60) -> None:
+        self.obs: deque[bool] = deque(maxlen=window)
+
+    def observe(self, on: bool) -> None:
+        self.obs.append(on)
+
+    def classify(self, min_frames: int, min_toggles: int, solid_ratio: float) -> str:
+        n = len(self.obs)
+        if n < min_frames:
+            return "unknown"
+        seq = list(self.obs)
+        on_ratio = sum(seq) / n
+        toggles = sum(1 for a, b in zip(seq, seq[1:]) if a != b)
+        if on_ratio >= solid_ratio and toggles <= 1:
+            return "solid"
+        if toggles >= min_toggles and 0.2 <= on_ratio <= 0.8:
+            return "flashing"
+        return "unknown"
 
 
 @dataclass
@@ -41,6 +71,7 @@ class Track:
     color: str
     kf: cv2.KalmanFilter
     missed: int
+    flash: TrackFlashState = field(default_factory=TrackFlashState)
 
 
 @dataclass
@@ -461,6 +492,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--off-val-max", type=int, default=80, help="Max median value for an OFF buoy blob.")
     parser.add_argument("--dark-block", type=int, default=51, help="adaptiveThreshold block size for the dark-blob channel (odd).")
     parser.add_argument("--dark-c", type=int, default=10, help="adaptiveThreshold C constant for the dark-blob channel.")
+    # P2: flashing vs solid classification (Safe Passage). OFF by default.
+    parser.add_argument(
+        "--classify-flash", action="store_true",
+        help="Classify each track as flashing/solid/unknown from its ON/OFF "
+        "history and write it to the flash_state CSV column. Distinguishes a "
+        "flashing-BLUE ENTRY beacon from a steady-BLUE EXIT beacon.",
+    )
+    parser.add_argument("--flash-window", type=int, default=60, help="Flash-state rolling window in FRAMES (~2-3 flash periods).")
+    parser.add_argument("--flash-min-frames", type=int, default=30, help="Min observed frames before flash_state leaves 'unknown'.")
+    parser.add_argument("--flash-min-toggles", type=int, default=2, help="Min ON/OFF toggles in the window to call a track 'flashing'.")
+    parser.add_argument("--flash-solid-ratio", type=float, default=0.85, help="Min on-ratio (with <=1 toggle) to call a track 'solid'.")
+    parser.add_argument(
+        "--flash-max-missed", type=int, default=25,
+        help="Track missed-frame budget when --classify-flash is on; must span a "
+        "full ~1 s dark phase so a flashing track survives its OFF interval.",
+    )
     parser.add_argument(
         "--yolo-model", type=str, default=None,
         help="Path to a YOLO .pt/.onnx model (see docs/08_annotation_and_training.md). When set, "
@@ -812,7 +859,12 @@ def find_detections_yolo(
 
 
 def update_tracks(
-    tracks: list[Track], detections: list[Detection], gate_px: float, max_missed: int, next_track_id: int
+    tracks: list[Track],
+    detections: list[Detection],
+    gate_px: float,
+    max_missed: int,
+    next_track_id: int,
+    flash_window: int = 60,
 ) -> tuple[list[Track], list[tuple[Detection, int, tuple[float, float]]], int]:
     assigned = []
     used_dets = set()
@@ -834,10 +886,12 @@ def update_tracks(
             meas = np.array([[det.cx_full], [det.cy_full]], np.float32)
             corr = track.kf.correct(meas)
             track.missed = 0
+            track.flash.observe(True)  # P2: light seen this frame
             used_dets.add(best_idx)
             assigned.append((det, track.track_id, (float(corr[0, 0]), float(corr[1, 0]))))
         else:
             track.missed += 1
+            track.flash.observe(False)  # P2: track alive but light dark this frame
 
     tracks = [t for t in tracks if t.missed <= max_missed]
 
@@ -845,7 +899,11 @@ def update_tracks(
         if i in used_dets:
             continue
         kf = make_kalman(det.cx_full, det.cy_full)
-        track = Track(track_id=next_track_id, color=det.color, kf=kf, missed=0)
+        track = Track(
+            track_id=next_track_id, color=det.color, kf=kf, missed=0,
+            flash=TrackFlashState(flash_window),
+        )
+        track.flash.observe(True)
         tracks.append(track)
         assigned.append((det, track.track_id, (det.cx_full, det.cy_full)))
         next_track_id += 1
@@ -929,6 +987,9 @@ def main() -> int:
 
     tracks = []
     next_track_id = 1
+    # P2: a flashing track must outlive its ~1 s dark phase, so widen the missed
+    # budget when flash classification is on (else keep the default behaviour).
+    flash_max_missed = args.flash_max_missed if args.classify_flash else args.max_track_missed
     window_name = "Stage-A RGB Detection"
     if display:
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -945,6 +1006,7 @@ def main() -> int:
                     "timestamp", "image_path", "track_id", "color", "confidence",
                     "cx", "cy", "x", "y", "w", "h",
                     "north_m", "east_m", "lat", "lon", "altitude_m", "intrinsics_source",
+                    "flash_state",
                 ]
             )
 
@@ -1008,8 +1070,10 @@ def main() -> int:
                         ] + off_dets
 
             tracks, assigned, next_track_id = update_tracks(
-                tracks, detections, args.track_gate_px, args.max_track_missed, next_track_id
+                tracks, detections, args.track_gate_px, flash_max_missed, next_track_id,
+                flash_window=args.flash_window,
             )
+            track_by_id = {t.track_id: t for t in tracks}
 
             frame_out = frame_full.copy() if need_overlay else None
             image_path = ""
@@ -1024,6 +1088,13 @@ def main() -> int:
 
             for det, track_id, (sx, sy) in assigned:
                 detection_count += 1
+                flash_state = ""
+                if args.classify_flash:
+                    trk = track_by_id.get(track_id)
+                    if trk is not None:
+                        flash_state = trk.flash.classify(
+                            args.flash_min_frames, args.flash_min_toggles, args.flash_solid_ratio
+                        )
                 off_north_m, off_east_m = project_pixel_to_ground_ned(
                     sx, sy, intr, args.altitude_m, args.heading_deg
                 )
@@ -1067,6 +1138,7 @@ def main() -> int:
                         f"{lon:.8f}",
                         f"{args.altitude_m:.2f}",
                         intr.source,
+                        flash_state,
                     ]
                 )
                 src_tag = os.path.basename(label) if label else "cam"
