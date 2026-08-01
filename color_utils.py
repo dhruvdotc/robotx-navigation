@@ -114,6 +114,23 @@ def build_mask(
     return acc
 
 
+def is_off_buoy(hsv_roi: np.ndarray, sat_max: int = 60, val_max: int = 80) -> bool:
+    """True if an ROI looks like an unlit (OFF / BLACK) Safe-Passage beacon.
+
+    The OFF state is a dark LED panel with no colour. Requiring BOTH a low median
+    saturation and a low median value is deliberate: a dark but *coloured* buoy
+    (e.g. the sim's intentionally dark blue light, grayscale ~20 yet highly
+    saturated - see simulation/light_buoy_cycler.py) must not be misread as OFF.
+    Water sits above the value floor, a lit colour above the saturation floor;
+    only a genuinely dark, grey blob passes both.
+    """
+    if hsv_roi.size == 0:
+        return False
+    s_med = float(np.median(hsv_roi[:, :, 1]))
+    v_med = float(np.median(hsv_roi[:, :, 2]))
+    return s_med <= sat_max and v_med <= val_max
+
+
 def _ranges_to_tuples(ranges_map: dict[str, list[HSVRange]]) -> dict[str, list[tuple[tuple[int, int, int], tuple[int, int, int]]]]:
     out: dict[str, list[tuple[tuple[int, int, int], tuple[int, int, int]]]] = {}
     for color, ranges in ranges_map.items():

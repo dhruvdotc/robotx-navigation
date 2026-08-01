@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
-from color_utils import build_mask, color_normalize, load_color_ranges
+from color_utils import build_mask, color_normalize, is_off_buoy, load_color_ranges
 
 
 @dataclass
@@ -61,6 +61,7 @@ COLOR_DRAW = {
     "red": (0, 0, 255),
     "green": (0, 255, 0),
     "blue": (255, 100, 0),
+    "black": (60, 60, 60),  # OFF/unlit Safe-Passage beacon (P1); drawn dark grey
     "unknown": (255, 255, 255),
 }
 
@@ -450,6 +451,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-circularity", type=float, default=0.35)
     parser.add_argument("--min-color-ratio", type=float, default=0.12)
     parser.add_argument("--track-gate-px", type=float, default=70.0)
+    # P1: OFF/black buoy detection (Safe Passage, docs/10_safe_passage.md). OFF by default.
+    parser.add_argument(
+        "--detect-off-buoys", action="store_true",
+        help="Also detect unlit OFF/BLACK Safe-Passage beacons via a dark-blob "
+        "proposal + saturation gate (HSV path only). Adds a 'black' detection class.",
+    )
+    parser.add_argument("--off-sat-max", type=int, default=60, help="Max median saturation for an OFF buoy blob.")
+    parser.add_argument("--off-val-max", type=int, default=80, help="Max median value for an OFF buoy blob.")
+    parser.add_argument("--dark-block", type=int, default=51, help="adaptiveThreshold block size for the dark-blob channel (odd).")
+    parser.add_argument("--dark-c", type=int, default=10, help="adaptiveThreshold C constant for the dark-blob channel.")
     parser.add_argument(
         "--yolo-model", type=str, default=None,
         help="Path to a YOLO .pt/.onnx model (see docs/08_annotation_and_training.md). When set, "
@@ -580,6 +591,94 @@ def find_detections(
                 confidence=max(0.0, min(1.0, conf)),
                 cx_full=float(cx_full),
                 cy_full=float(cy_full),
+                radius_det=radius,
+                bbox_full=(x_f, y_f, w_f, h_f),
+            )
+        )
+    return detections
+
+
+def find_off_buoys(
+    frame_full: np.ndarray,
+    frame_det: np.ndarray,
+    hsv_full: np.ndarray,
+    roi: tuple[int, int, int, int],
+    args: argparse.Namespace,
+    intr: Intrinsics,
+) -> list[Detection]:
+    """P1: detect OFF/BLACK Safe-Passage beacons (see docs/10_safe_passage.md).
+
+    An unlit beacon is a dark, low-contrast, colourless blob - it has no colour
+    for the HSV path to threshold and often no Canny edge, so the normal
+    proposal misses it. This adds a dark-blob proposal (adaptive threshold on
+    the value channel) and classifies a candidate as ``black`` only when
+    ``is_off_buoy`` confirms it is both dark and unsaturated. Enabled by
+    ``--detect-off-buoys``; reject-only w.r.t. the colour path (adds only
+    ``black`` detections, never touches red/green/blue).
+    """
+    detections: list[Detection] = []
+    h_det, w_det = frame_det.shape[:2]
+    x0, y0, x1, y1 = roi
+    expected_d = intr.fx * args.target_diameter_m / max(args.altitude_m, 0.1)
+    min_d = 0.5 * expected_d
+    max_d = 2.0 * expected_d
+    scale_x = frame_full.shape[1] / float(w_det)
+    scale_y = frame_full.shape[0] / float(h_det)
+    kernel = np.ones((args.kernel_size, args.kernel_size), np.uint8)
+
+    gray = cv2.cvtColor(frame_det, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Adaptive (local-mean) threshold flags pixels darker than their
+    # neighbourhood, so an unlit buoy pops against the surrounding water even
+    # when its absolute brightness varies across the frame. Block size is large
+    # vs. a buoy so the local mean is the water, not the buoy itself.
+    block = args.dark_block if args.dark_block % 2 == 1 else args.dark_block + 1
+    dark = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, block, args.dark_c
+    )
+    dark = cv2.morphologyEx(dark, cv2.MORPH_OPEN, kernel)
+    dark = cv2.morphologyEx(dark, cv2.MORPH_CLOSE, kernel)
+
+    mask_roi = np.zeros_like(dark)
+    mask_roi[y0:y1, x0:x1] = dark[y0:y1, x0:x1]
+    contours, _ = cv2.findContours(mask_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area < 8:
+            continue
+        perimeter = cv2.arcLength(cnt, True)
+        if perimeter <= 1e-6:
+            continue
+        circularity = (4.0 * np.pi * area) / (perimeter * perimeter)
+        if circularity < args.min_circularity:
+            continue
+        (_, _), radius = cv2.minEnclosingCircle(cnt)
+        diameter = 2.0 * radius
+        if diameter < min_d or diameter > max_d:
+            continue
+
+        x, y, w, h = cv2.boundingRect(cnt)
+        x_f = int(max(0, x * scale_x))
+        y_f = int(max(0, y * scale_y))
+        w_f = int(min(frame_full.shape[1] - x_f, w * scale_x))
+        h_f = int(min(frame_full.shape[0] - y_f, h * scale_y))
+        if w_f <= 0 or h_f <= 0:
+            continue
+
+        hsv_roi = hsv_full[y_f : y_f + h_f, x_f : x_f + w_f]
+        if not is_off_buoy(hsv_roi, args.off_sat_max, args.off_val_max):
+            continue
+
+        # More grey (lower median saturation) -> more confident it is unlit.
+        s_med = float(np.median(hsv_roi[:, :, 1]))
+        conf = float(max(0.0, min(1.0, 1.0 - s_med / max(args.off_sat_max, 1))))
+        detections.append(
+            Detection(
+                color="black",
+                confidence=conf,
+                cx_full=x_f + w_f / 2.0,
+                cy_full=y_f + h_f / 2.0,
                 radius_det=radius,
                 bbox_full=(x_f, y_f, w_f, h_f),
             )
@@ -884,6 +983,29 @@ def main() -> int:
                 roi = (margin_x, margin_y, args.det_width - margin_x, args.det_height - margin_y)
 
                 detections = find_detections(frame_full, frame_det, hsv_det, hsv_full, roi, args, intr)
+
+                if args.detect_off_buoys:
+                    # P1: add OFF/black buoys. A blob only becomes an off_det
+                    # after is_off_buoy() confirms the ROI is dark AND
+                    # unsaturated, which a genuinely lit colour buoy never is -
+                    # so where the two overlap, the saturation-verified BLACK is
+                    # the trustworthy call and the (weak) colour detection is
+                    # dropped. This runs only under --detect-off-buoys, so the
+                    # default pipeline is unchanged.
+                    off_dets = find_off_buoys(frame_full, frame_det, hsv_full, roi, args, intr)
+                    if off_dets:
+                        def _same_object(cd: Detection, od: Detection) -> bool:
+                            cx, cy, cw, ch = cd.bbox_full
+                            ox, oy, ow, oh = od.bbox_full
+                            ccx, ccy = cx + cw / 2.0, cy + ch / 2.0
+                            ocx, ocy = ox + ow / 2.0, oy + oh / 2.0
+                            return (ox <= ccx <= ox + ow and oy <= ccy <= oy + oh) or (
+                                cx <= ocx <= cx + cw and cy <= ocy <= cy + ch
+                            )
+
+                        detections = [
+                            cd for cd in detections if not any(_same_object(cd, od) for od in off_dets)
+                        ] + off_dets
 
             tracks, assigned, next_track_id = update_tracks(
                 tracks, detections, args.track_gate_px, args.max_track_missed, next_track_id
