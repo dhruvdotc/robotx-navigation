@@ -32,6 +32,9 @@ Goal: full end-to-end cycle (capture → annotate → train → deploy → test)
 - [x] Train/val split leakage fixed at the root: `00_preprocess_training_data.py` splits RAW captures before augmentation (recorded in `split_manifest.txt`); `01_autolabel.py`/`02_finetune.py`/`validation_step1` preserve the split
 - [x] Sim-trained 3-class model (red/green/BLUE) with honest held-out validation: mAP50 0.991, overfit check HEALTHY - see `yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/README.md` including its caveats (weak-label GT errors, sim-only imagery)
 - [x] `cv_bridge` NumPy-2 ABI segfault fixed: `camera_live_feed.py` and `accuracy_verify.py` decode rgb8 ROS images manually with numpy
+- [x] Safe Passage UAV detectors (`docs/10_safe_passage.md`): P1 OFF/black buoy (`--detect-off-buoys`), P2 flashing-vs-solid track classifier (`--classify-flash`, the flashing-BLUE-entry vs steady-BLUE-exit discriminator), P3 online HSV EMA re-adaptation (`--online-recolor`). All default-OFF (shipped pipeline unchanged); validated on synthetic + real frames. P4 (YOLO 4th `black` class) is a documented stretch.
+- [x] YOLO reject-only post-filters (`--yolo-size-gate`, `--yolo-min-circularity`) in `find_detections_yolo()` - default OFF, validated no-regression vs a fresh baseline (P0.922/R1.000/mAP50 0.994); the size gate at 10 m AGL was measured to crater recall to 0.404, hence off by default
+- [x] `model/` retraining entry point (`model/README.md` + one-command `model/run_pipeline.sh`) - wraps the existing scripts with a fail-fast mAP50 gate; validated end-to-end (mAP50 0.994, overfit HEALTHY, stress retention 97%)
 
 ---
 
@@ -42,7 +45,7 @@ Goal: full end-to-end cycle (capture → annotate → train → deploy → test)
 - [ ] IMU pitch/roll compensation in GPS projection (yaw/heading is now handled via `--heading-deg`; pitch/roll is not)
 - [ ] Autolabel quality audit: found systematic weak-label errors (double red+green boxes on one object, a missed fully-saturated red buoy in `results_sim_courses_v2` val, see its README) - model metrics measure agreement with these labels, so spot-fix labels or build a small human-verified test set
 - [ ] Normalization mismatch: training images get Phase-2 color normalization but `camera_live_feed.py --yolo-model` feeds raw frames; apply the same normalization at inference or retrain without it
-- [ ] Detector Stage-1 is grayscale-Canny only: a bright blue object on blue-green water produces no edge (measured in sim; same physics on real water where blue is already the weakest class) - a saturation-aware proposal channel would fix a real blind spot
+- [ ] Detector Stage-1 is grayscale-Canny only: a bright blue object on blue-green water produces no edge (measured in sim; same physics on real water where blue is already the weakest class) - a saturation-aware proposal channel would fix a real blind spot. **Partially addressed:** P1's dark-blob proposal (`--detect-off-buoys`) covers the low-*value* (dark / OFF-buoy) blind spot; the low-*saturation* blue-on-water case is still open.
 
 ---
 
