@@ -1,3 +1,5 @@
+"""ROS 2 launch description for the UCSD RobotX Gazebo demo (world + drone model)."""
+
 from pathlib import Path
 
 from launch import LaunchDescription

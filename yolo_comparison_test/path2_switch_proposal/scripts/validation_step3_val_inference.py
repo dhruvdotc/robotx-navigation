@@ -211,7 +211,7 @@ def main() -> int:
     out_txt = os.path.join(root, "honest_results.txt")
     with open(out_txt, "w", encoding="utf-8") as f:
         f.write(text)
-    return 0 
+    return 0
 
 
 if __name__ == "__main__":

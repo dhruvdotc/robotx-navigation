@@ -4,7 +4,7 @@
 This script used to CREATE the split here, by shuffling path2_dataset/images
 80/20. That was quietly dishonest once 00_preprocess_training_data.py entered
 the pipeline: the pool being shuffled contained augmented variants, so an
-original could land in train while its own _augNN twins landed in "val"  - 
+original could land in train while its own _augNN twins landed in "val" -
 near-duplicate leakage that inflated held-out mAP while the train/val loss
 gap (step 4) correctly screamed overfit.
 

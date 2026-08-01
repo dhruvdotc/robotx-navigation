@@ -1,3 +1,9 @@
+"""MAVLink buoy-report package: STATUSTEXT encode/decode + UDP transmitter.
+
+BuoyMavlinkTransmitter is exposed lazily via __getattr__ so importing this
+package does not pull in pymavlink until you actually transmit. See README.md.
+"""
+
 from . import _mavcore_path  # noqa: F401
 
 from mavlink_comms.buoy_report import BuoyReport, decode_statustext, encode_statustext
