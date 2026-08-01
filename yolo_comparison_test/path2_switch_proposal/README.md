@@ -1,5 +1,9 @@
 # Path 2 Switch Proposal (Stage B)
 
+> **To retrain the model, start at [`model/`](../../model/README.md)** - it wraps
+> the `scripts/` in this folder behind one guided command. This README is the
+> design/review package; `model/` is the how-to.
+
 This folder is a concise review package for switching Stage B from HSV-only detection to a YOLO model trained from Stage A auto-labels.
 
 > **Newest results:** `results_sim_courses_v2/README.md` - a full sim-trained

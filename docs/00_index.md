@@ -73,3 +73,4 @@ python visualize_results.py                               # results diagram PNG
 | `mavlink_comms/` | MAVLink buoy report protocol + UDP ground station |
 | `simulation/` | Gazebo Harmonic SITL stack (3 courses) |
 | `scripts/` | Jetson WiFi + setup helpers |
+| `model/` | **Start here to retrain** - guided README + one-command `run_pipeline.sh` |

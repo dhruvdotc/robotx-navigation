@@ -1,15 +1,15 @@
 === HONEST VALIDATION RESULTS ===
 Val set size: 65 images (never seen during training)
-True Positives:  94
-False Positives: 8  (things detected that aren't balloons)
-False Negatives: 0  (balloons missed)
-Precision: 0.922
-Recall:    1.000
+True Positives:  93
+False Positives: 7  (things detected that aren't balloons)
+False Negatives: 1  (balloons missed)
+Precision: 0.930
+Recall:    0.989
 F1 Score:  0.959
 mAP50 (ultralytics): 0.994
 
 Per class:
-  red: precision=0.887 recall=1.000 F1=0.940
+  red: precision=0.902 recall=0.979 F1=0.939
   green: precision=0.947 recall=1.000 F1=0.973
   blue: precision=1.000 recall=1.000 F1=1.000
 
