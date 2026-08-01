@@ -457,6 +457,21 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--yolo-conf", type=float, default=0.25, help="YOLO confidence threshold.")
     parser.add_argument(
+        "--yolo-size-gate", action="store_true",
+        help="Reject YOLO boxes whose diameter is outside "
+        "[--yolo-size-tol-lo, --yolo-size-tol-hi] x expected_d "
+        "(expected_d = fx*target_diameter_m/altitude_m). OFF by default: only "
+        "valid when --altitude-m and --target-diameter-m match the real capture "
+        "geometry, else it rejects genuine buoys (see docs/07_roadmap.md A1).",
+    )
+    parser.add_argument("--yolo-size-tol-lo", type=float, default=0.5, help="Lower diameter fraction for --yolo-size-gate.")
+    parser.add_argument("--yolo-size-tol-hi", type=float, default=2.0, help="Upper diameter fraction for --yolo-size-gate.")
+    parser.add_argument(
+        "--yolo-min-circularity", type=float, default=0.0,
+        help="If >0, reject YOLO boxes whose crop-blob circularity is below this "
+        "(reject-only shape gate mirroring the HSV path). OFF (0.0) by default.",
+    )
+    parser.add_argument(
         "--save-video", action="store_true",
         help="Also write annotated frames to an mp4 in --log-dir (works headless too).",
     )
@@ -588,7 +603,41 @@ def load_yolo_model(model_path: str):
     return YOLO(model_path)
 
 
-def find_detections_yolo(frame_full: np.ndarray, model, conf_threshold: float) -> list[Detection]:
+def yolo_box_circularity(frame_full: np.ndarray, bbox: tuple[int, int, int, int]) -> float:
+    """Circularity (4*pi*area / perimeter^2) of the largest saturation blob
+    inside a YOLO box - a reject-only shape metric for the YOLO path, scoped to
+    the crop the model already found. Mirrors the contour-circularity test the
+    HSV path (find_detections) runs, but on the box interior instead of a
+    Canny-edge contour. Returns 0.0 when the crop has no usable blob; the caller
+    only rejects on it when min_circularity > 0, so a 0.0 is harmless otherwise.
+    """
+    x, y, w, h = bbox
+    if w < 3 or h < 3:
+        return 0.0
+    crop = frame_full[y : y + h, x : x + w]
+    if crop.size == 0:
+        return 0.0
+    sat = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)[:, :, 1]
+    _, mask = cv2.threshold(sat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not cnts:
+        return 0.0
+    c = max(cnts, key=cv2.contourArea)
+    area = cv2.contourArea(c)
+    perimeter = cv2.arcLength(c, True)
+    if area <= 0 or perimeter <= 1e-6:
+        return 0.0
+    return float(4.0 * np.pi * area / (perimeter * perimeter))
+
+
+def find_detections_yolo(
+    frame_full: np.ndarray,
+    model,
+    conf_threshold: float,
+    expected_d: float | None = None,
+    size_tol: tuple[float, float] | None = None,
+    min_circularity: float = 0.0,
+) -> list[Detection]:
     """YOLO detection path (Path 2 fine-tune), same Detection shape as the HSV
     path so downstream tracking/CSV/GPS/MAVLink code is shared unchanged.
     Class-id -> color name comes from the model itself (0=red, 1=green,
@@ -603,7 +652,24 @@ def find_detections_yolo(frame_full: np.ndarray, model, conf_threshold: float) -
     dropped red recall to 0.40; the HSV correction dropped it to 0.0, by
     reclassifying genuine tight red boxes as green whenever the crop
     included enough background). Root-causing and retraining fixed the real
-    problem; this function is deliberately back to plain raw model output.
+    problem; the raw model output is the baseline.
+
+    Optional reject-only post-filters (both OFF unless the caller passes them;
+    the CLI only does so for --yolo-size-gate / --yolo-min-circularity):
+      * expected-size gate: drop a box whose diameter is outside
+        [size_tol[0], size_tol[1]] * expected_d, where
+        expected_d = fx * target_diameter_m / altitude_m -- the same formula the
+        HSV path already uses in find_detections().
+      * circularity gate: drop a box whose crop-blob circularity is below
+        min_circularity (see yolo_box_circularity).
+    Unlike the reverted 2024 experiment these never *reclassify* a box, only
+    drop clear outliers. They default OFF because on this checkout's val set no
+    size or shape threshold separates the false positives from the true ones,
+    and the size gate at a realistic 10 m AGL would reject most genuine buoys
+    (sim balloons render at 55-149 px vs a 42 px expected_d) -- measured, see
+    tests/validation/test_yolo_size_gate.py and docs/07_roadmap.md. Turn them
+    on only
+    when --altitude-m / --target-diameter-m match the real capture geometry.
     """
     result = model(frame_full, conf=conf_threshold, verbose=False)[0]
     boxes = result.boxes
@@ -611,6 +677,7 @@ def find_detections_yolo(frame_full: np.ndarray, model, conf_threshold: float) -
     if boxes is None:
         return detections
     names = result.names
+    size_gate = expected_d is not None and expected_d > 1e-6 and size_tol is not None
     for i in range(len(boxes)):
         conf = float(boxes.conf[i].item())
         cls_id = int(boxes.cls[i].item())
@@ -624,6 +691,14 @@ def find_detections_yolo(frame_full: np.ndarray, model, conf_threshold: float) -
         h = int(max(0, round(y2 - y1)))
         if w <= 0 or h <= 0:
             continue
+
+        # Reject-only gates (no-ops unless explicitly enabled by the caller).
+        diameter = float(max(w, h))
+        if size_gate and not (size_tol[0] * expected_d <= diameter <= size_tol[1] * expected_d):
+            continue
+        if min_circularity > 0.0 and yolo_box_circularity(frame_full, (x, y, w, h)) < min_circularity:
+            continue
+
         detections.append(
             Detection(
                 color=color,
@@ -786,7 +861,18 @@ def main() -> int:
                 # here would be a distribution shift vs. what it learned, so
                 # normalize a copy for detection only; frame_full stays raw
                 # for display/recording/GPS projection (geometry is unchanged).
-                detections = find_detections_yolo(color_normalize(frame_full), yolo_model, args.yolo_conf)
+                # Optional reject-only gates (default OFF -> identical to the
+                # raw-model baseline). expected_d matches the HSV path's formula.
+                expected_d_yolo = intr.fx * args.target_diameter_m / max(args.altitude_m, 0.1)
+                size_tol = (args.yolo_size_tol_lo, args.yolo_size_tol_hi) if args.yolo_size_gate else None
+                detections = find_detections_yolo(
+                    color_normalize(frame_full),
+                    yolo_model,
+                    args.yolo_conf,
+                    expected_d=expected_d_yolo if args.yolo_size_gate else None,
+                    size_tol=size_tol,
+                    min_circularity=args.yolo_min_circularity,
+                )
             else:
                 frame_full = apply_clahe_to_v(frame_full)
                 frame_det = cv2.resize(frame_full, (args.det_width, args.det_height), interpolation=cv2.INTER_AREA)

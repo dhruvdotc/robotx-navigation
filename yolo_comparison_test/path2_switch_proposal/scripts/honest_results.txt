@@ -6,7 +6,7 @@ False Negatives: 0  (balloons missed)
 Precision: 0.922
 Recall:    1.000
 F1 Score:  0.959
-mAP50 (ultralytics): 0.995
+mAP50 (ultralytics): 0.994
 
 Per class:
   red: precision=0.887 recall=1.000 F1=0.940
