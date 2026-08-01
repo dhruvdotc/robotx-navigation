@@ -88,6 +88,17 @@ per track to count ON vs OFF frames.
 > MAVLink STATUSTEXT payload extension (`mavlink_comms/`) is not yet done -
 > `flash_state` currently only reaches `detections.csv`. Tracked as a follow-up.
 
+> **Classifier robustness (hardened):** `classify()` is duty-cycle-first, so a
+> solid light that drops a few frames to motion blur/occlusion still reads
+> `solid` (not thrown to `unknown` by the stray toggles), and a mostly-dark
+> track reads `off`. `flash_state` values are now `{solid, flashing, off,
+> unknown}`. Detecting a 1 s/1 s flash needs `--flash-window` to span >= ~2
+> flash periods (>= ~4*fps frames): the default 60 covers ~15 fps; use 90-120
+> for 30 fps. A window too small for the framerate reads a real flash as
+> `unknown` on purpose - one period is indistinguishable from a single on->off
+> transition. Covered by `tests/validation/test_flash_scenarios.py` (11
+> scenarios: framerates 10/15/30 fps, dropouts, off, entry-vs-exit).
+
 **Sim validation:** Add a `--flash-hz N` flag to `simulation/light_buoy_cycler.py` and run on all three courses. Verify `accuracy_verify.py` reports `flashing` for the light buoy and `solid` for gate buoys.
 
 > Not done - `light_buoy_cycler.py` still only models the older red→green→blue
@@ -226,7 +237,7 @@ confidence  (0–1, existing formula)
 ```
 
 > **Current shipped shape:** `color ∈ {red, green, blue, black}` (black from P1)
-> and a separate `flash_state ∈ {flashing, solid, unknown}` CSV column (from
+> and a separate `flash_state ∈ {flashing, solid, off, unknown}` CSV column (from
 > P2) - not yet folded into a single combined `light_mode` field, and not yet
 > forwarded over MAVLink STATUSTEXT (see Gap 1 follow-up above). The GPS/
 > confidence fields are unchanged from the existing pipeline.

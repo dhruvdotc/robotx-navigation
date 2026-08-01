@@ -49,15 +49,33 @@ class TrackFlashState:
         self.obs.append(on)
 
     def classify(self, min_frames: int, min_toggles: int, solid_ratio: float) -> str:
+        """Classify the track's light as solid / flashing / off / unknown.
+
+        Duty-cycle first (framerate-robust): a mostly-on light is 'solid' and a
+        mostly-dark one is 'off', keyed off the on-ratio - so a solid light that
+        drops a few frames to motion blur or occlusion still reads 'solid'
+        instead of being thrown to 'unknown' by the stray toggles. 'flashing'
+        needs a *balanced* duty cycle (between the solid/off bands) AND at least
+        min_toggles real ON<->OFF transitions, so a single on->off transient is
+        not mistaken for a flash.
+
+        Window sizing: detecting a 1 s/1 s flash needs the window to span >= ~2
+        flash periods, i.e. --flash-window >= ~4*fps (60 covers ~15 fps; use
+        90-120 for 30 fps). A window too small for the framerate reads a real
+        flash as 'unknown' rather than guessing - that is deliberate, since one
+        period is indistinguishable from a single on->off transition.
+        """
         n = len(self.obs)
         if n < min_frames:
             return "unknown"
         seq = list(self.obs)
         on_ratio = sum(seq) / n
         toggles = sum(1 for a, b in zip(seq, seq[1:]) if a != b)
-        if on_ratio >= solid_ratio and toggles <= 1:
+        if on_ratio >= solid_ratio:
             return "solid"
-        if toggles >= min_toggles and 0.2 <= on_ratio <= 0.8:
+        if on_ratio <= 1.0 - solid_ratio:
+            return "off"
+        if toggles >= min_toggles:
             return "flashing"
         return "unknown"
 
