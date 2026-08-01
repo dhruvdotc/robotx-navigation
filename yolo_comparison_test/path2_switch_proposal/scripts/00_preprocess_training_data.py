@@ -228,6 +228,9 @@ def build_aug_pipeline() -> "A.Compose":
       RandomFog            - coastal fog and atmospheric haze
       GaussNoise           - sensor noise at long distances
       Spatter              - physical water droplets hitting the camera lens
+      MotionBlur           - camera shake + sun-glint streaks (roadmap TODO #1
+                             "streak glare": a directional blur kernel)
+      GaussianBlur         - defocus / altitude-dependent softening at range
     """
     if not _ALB_OK:
         raise RuntimeError(
@@ -282,6 +285,16 @@ def build_aug_pipeline() -> "A.Compose":
             ),
             # Weather: fog, sensor noise, lens droplets
             A.OneOf(weather_candidates, p=0.35),
+            # Altitude-dependent defocus + motion / streak-glare blur. Kept mild
+            # (small kernels) and infrequent so buoy edges survive; addresses
+            # roadmap TODO #1 (streak glare + altitude-aware blur).
+            A.OneOf(
+                [
+                    A.MotionBlur(blur_limit=(3, 11), p=1.0),
+                    A.GaussianBlur(blur_limit=(3, 7), p=1.0),
+                ],
+                p=0.3,
+            ),
         ]
     )
 
