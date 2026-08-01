@@ -46,6 +46,49 @@ Goal: full end-to-end cycle (capture → annotate → train → deploy → test)
 
 ---
 
+## RobotX 2026 Handbook compliance notes
+
+Cross-checked against the *2026 Maritime RobotX Challenge Team Handbook*
+(rev. 2026-03-30), sections 3.3.1 / 3.3.2 / 3.4, fetched 2026-07-31 from the
+GitBook mirror (`robonation.gitbook.io/robotx-2026-team-handbook`). Handbook is
+treated as source of truth; no discrepancies found vs. our internal design.
+
+### Known gap: RoboCommand reporting (not built)
+
+Handbook 3.4 requires every SoS to report status to RoboNation's **RoboCommand**
+over a hard-wired RJ-45 link, using **Protocol Buffers** (`.proto` schema →
+`protoc` → compact binary). Our `mavlink_comms/` → MAVLink UDP → ground-station
+path is the team's own *internal* telemetry; it is **not** the RoboCommand
+channel.
+
+> Don't build a speculative `.proto` integration yet - the message schema is
+> unpublished ("Additional details to be provided in a future iteration of the
+> Handbook"). Tracked here; wire it once RoboNation releases the schema.
+
+### Safe Passage (3.3.2) - UAV perception scope
+
+- The UAV's detection target is the **top-visible** beacon (nadir camera), a
+  physically separate light from the side-visible one a surface boat sees.
+- Five beacon states: OFF, flashing RED, flashing GREEN, flashing BLUE, steady
+  BLUE. Flashing = 1 s on / 1 s off, repeating.
+- Core Tier: UAV is **optional** (its perception earns the multi-vehicle
+  collaboration bonus; side-visible RED/GREEN are lit so a USV could transit
+  alone). UAV job at Core = detect / classify / report RED, GREEN, BLACK (OFF)
+  buoys plus the BLUE entry/exit markers - **not** path planning.
+- Flashing-BLUE (ENTRY) vs steady-BLUE (EXIT) differ only in temporal pattern,
+  so the flash-state classifier (P2) is the required discriminator between them.
+- Full plan: `docs/10_safe_passage.md`.
+
+### Obstacle avoidance (3.3.1) - cross-cutting, not a scored task
+
+"Every course element is an object to be avoided or approached safely";
+distractor "obstacle buoys" may be scattered in the operating areas. Physical
+avoidance is the USV/UUV's job. The UAV's buildable piece is **perception**: not
+misclassifying distractors (olive panels, orange crates, gray barrels) as a
+navigation-buoy colour. Validated in `simulation/` - see the A3 note below.
+
+---
+
 ## TODO - Priority order
 
 ### 1. Improve augmentation pipeline
