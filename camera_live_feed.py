@@ -23,7 +23,14 @@ from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
-from color_utils import build_mask, color_normalize, is_off_buoy, load_color_ranges
+from color_utils import (
+    build_mask,
+    circular_hue_mean,
+    color_normalize,
+    is_off_buoy,
+    load_color_ranges,
+    make_ranges_for_hue,
+)
 
 
 class TrackFlashState:
@@ -508,6 +515,16 @@ def parse_args() -> argparse.Namespace:
         help="Track missed-frame budget when --classify-flash is on; must span a "
         "full ~1 s dark phase so a flashing track survives its OFF interval.",
     )
+    # P3: online HSV colour re-adaptation (HSV path only). OFF by default.
+    parser.add_argument(
+        "--online-recolor", action="store_true",
+        help="Adapt HSV colour ranges online via an EMA of the hues seen in "
+        "high-confidence detections, so thresholds track lighting drift without a "
+        "re-fly (HSV path only). Full re-fit remains the fallback for big shifts.",
+    )
+    parser.add_argument("--recolor-alpha", type=float, default=0.1, help="EMA weight for a new hue observation (0-1).")
+    parser.add_argument("--recolor-interval", type=int, default=10, help="Refresh COLOR_RANGES every N frames.")
+    parser.add_argument("--recolor-min-conf", type=float, default=0.5, help="Min detection confidence to feed the colour EMA.")
     parser.add_argument(
         "--yolo-model", type=str, default=None,
         help="Path to a YOLO .pt/.onnx model (see docs/08_annotation_and_training.md). When set, "
@@ -643,6 +660,71 @@ def find_detections(
             )
         )
     return detections
+
+
+class OnlineColorAdapter:
+    """P3: nudge the HSV COLOR_RANGES toward the hues actually seen in
+    high-confidence detections, so fixed thresholds track slow lighting drift
+    without a re-fly (see docs/10_safe_passage.md). Hue is measured over the
+    saturated/bright pixels of a detection ROI - NOT only pixels already inside
+    the current range - so the EMA can follow drift past the current bounds. A
+    large shift the EMA cannot absorb is handled by the documented fallback: a
+    full re-fit (fresh reference crops -> load_color_ranges, or a YOLO re-train).
+    """
+
+    def __init__(self, ranges, alpha: float, hue_margin: int, sat_floor: int, val_floor: int) -> None:
+        self.alpha = alpha
+        self.hue_margin = hue_margin
+        self.sat_floor = sat_floor
+        self.val_floor = val_floor
+        self.ema_hue: dict[str, float | None] = {}
+        for color in ("red", "green", "blue"):
+            self.ema_hue[color] = self._range_center(ranges.get(color, []))
+
+    @staticmethod
+    def _range_center(ranges) -> float | None:
+        """Circular-mean hue of a colour's range endpoints (handles red's wrap)."""
+        bounds = []
+        for low, high in ranges:
+            bounds.extend([low[0], high[0]])
+        if not bounds:
+            return None
+        return float(circular_hue_mean(np.array(bounds, dtype=np.float32)))
+
+    def observe(self, color: str, hsv_roi: np.ndarray) -> float | None:
+        """EMA-update this colour's hue from the ROI's saturated pixels."""
+        if color not in self.ema_hue or hsv_roi.size == 0:
+            return None
+        s = hsv_roi[:, :, 1]
+        v = hsv_roi[:, :, 2]
+        valid = (s > self.sat_floor) & (v > self.val_floor)
+        if int(valid.sum()) < 10:
+            return None
+        obs = float(circular_hue_mean(hsv_roi[:, :, 0][valid]))
+        prev = self.ema_hue[color]
+        if prev is None:
+            self.ema_hue[color] = obs
+        else:
+            # Blend along the shortest arc so a hue near the 0/179 wrap is stable.
+            pa = math.radians(prev * 2.0)
+            oa = math.radians(obs * 2.0)
+            sin_b = (1.0 - self.alpha) * math.sin(pa) + self.alpha * math.sin(oa)
+            cos_b = (1.0 - self.alpha) * math.cos(pa) + self.alpha * math.cos(oa)
+            ang = math.atan2(sin_b, cos_b)
+            if ang < 0:
+                ang += 2.0 * math.pi
+            self.ema_hue[color] = (math.degrees(ang) / 2.0) % 180.0
+        return self.ema_hue[color]
+
+    def build_ranges(self) -> dict[str, list[tuple[tuple[int, int, int], tuple[int, int, int]]]]:
+        """Rebuild COLOR_RANGES centred on the current EMA hues."""
+        out: dict[str, list[tuple[tuple[int, int, int], tuple[int, int, int]]]] = {}
+        for color, hue in self.ema_hue.items():
+            if hue is None:
+                continue
+            ranges = make_ranges_for_hue(int(round(hue)), self.hue_margin, self.sat_floor, self.val_floor)
+            out[color] = [(r.low, r.high) for r in ranges]
+        return out
 
 
 def find_off_buoys(
@@ -938,6 +1020,18 @@ def main() -> int:
     global COLOR_RANGES
     args = parse_args()
     COLOR_RANGES = load_color_ranges(classes_dir="captures/classes")
+
+    color_adapter = None
+    if args.online_recolor:
+        # P3: seed the EMA from the loaded ranges; refresh COLOR_RANGES in-loop.
+        color_adapter = OnlineColorAdapter(
+            COLOR_RANGES, args.recolor_alpha, hue_margin=12, sat_floor=50, val_floor=45
+        )
+        print(
+            f"[INFO] Online colour re-adaptation ON (alpha={args.recolor_alpha}, "
+            f"every {args.recolor_interval} frames). Initial EMA hues: "
+            + ", ".join(f"{c}={h:.0f}" for c, h in color_adapter.ema_hue.items() if h is not None)
+        )
     os.makedirs(args.log_dir, exist_ok=True)
     csv_path = os.path.join(args.log_dir, "detections.csv")
     csv_exists = os.path.exists(csv_path)
@@ -1069,6 +1163,16 @@ def main() -> int:
                             cd for cd in detections if not any(_same_object(cd, od) for od in off_dets)
                         ] + off_dets
 
+                if color_adapter is not None:
+                    # P3: feed high-confidence colour ROIs into the hue EMA, then
+                    # periodically re-centre COLOR_RANGES on the learned hues.
+                    for d in detections:
+                        if d.color in ("red", "green", "blue") and d.confidence >= args.recolor_min_conf:
+                            bx, by, bw, bh = d.bbox_full
+                            color_adapter.observe(d.color, hsv_full[by : by + bh, bx : bx + bw])
+                    if frame_count % max(1, args.recolor_interval) == 0:
+                        COLOR_RANGES = color_adapter.build_ranges()
+
             tracks, assigned, next_track_id = update_tracks(
                 tracks, detections, args.track_gate_px, flash_max_missed, next_track_id,
                 flash_window=args.flash_window,
@@ -1182,6 +1286,11 @@ def main() -> int:
         transmitter.close()
     if telemetry is not None:
         telemetry.stop = True
+    if color_adapter is not None:
+        print(
+            "[INFO] Final adapted colour hues (EMA): "
+            + ", ".join(f"{c}={h:.1f}" for c, h in color_adapter.ema_hue.items() if h is not None)
+        )
     print(f"[INFO] Processed {frame_count} frame(s), {detection_count} detection(s). Log: {csv_path}")
     return 0
 
