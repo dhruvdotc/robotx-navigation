@@ -231,6 +231,12 @@ simulation/**/cache/
 yolo11n.pt
 yolo_comparison_test/path2_switch_proposal/captures/
 
+# Model weights / exported binaries - never commit; use model/fetch_weights.sh
+# to pull a released model, or model/run_pipeline.sh to train a new one.
+*.pt
+*.onnx
+*.engine
+
 # ArduPilot SITL runtime artifacts (eeprom.bin persists FRAME_CLASS=1 across
 # launches from repo root - keep the file locally, just don't commit it).
 eeprom.bin
