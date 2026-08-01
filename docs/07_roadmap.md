@@ -85,7 +85,21 @@ channel.
 distractor "obstacle buoys" may be scattered in the operating areas. Physical
 avoidance is the USV/UUV's job. The UAV's buildable piece is **perception**: not
 misclassifying distractors (olive panels, orange crates, gray barrels) as a
-navigation-buoy colour. Validated in `simulation/` - see the A3 note below.
+navigation-buoy colour.
+
+**Measured (A3, 2026-07-31)** on the 65 real held-out course frames that contain
+the sim distractors:
+
+| Detector | On-buoy (TP) | Distractor/bg FP | Precision | Buoy recall |
+|----------|-------------|------------------|-----------|-------------|
+| YOLO (`best.pt`) | 94 | 8 (buoy-shaped: dup boxes / weak-label misses) | 0.922 | 1.00 |
+| HSV two-stage | 75 | 5 (4 green ~olive, 1 red ~orange) | 0.938 | ~0.80 |
+
+Distractors are overwhelmingly suppressed by both paths. Residual: the **olive
+panels occasionally bleed into green** (the documented hue-boundary risk - olive
+hue ~60-70 vs green 75-105), and one orange bled into red. No non-buoy
+"obstacle" reporting channel exists in the pipeline, so none was added (out of
+scope; physical avoidance is the USV's job). Harnesses: `tests/validation/gen_distractor_frames.py`, `tests/validation/test_distractor_suppression.py`.
 
 ---
 
