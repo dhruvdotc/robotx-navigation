@@ -18,6 +18,8 @@ bash simulation/run_course.sh --course 1 --visual
 
 All outputs auto-save to `simulation/sim_tests/run_N/` on completion.
 
+**On a Mac:** native macOS can't run this — see [01_environment_setup.md → "Mac (simulation)"](01_environment_setup.md#mac-simulation) for the Ubuntu-VM setup that does (headless mode only).
+
 ---
 
 ## The three courses

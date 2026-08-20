@@ -307,6 +307,8 @@ All launchers pass `--no-undistort` because ogre2 renders a clean pinhole (no le
 - VRX built in `~/vrx_ws` (supplies `coast_waves` and the wave plugins). Override with `VRX_GZ=<path>` if installed elsewhere.
 - For YOLO mode: `pip install ultralytics` (already in `requirements.txt`)
 
+**Mac (Apple Silicon):** native macOS can't run this stack — see [`docs/01_environment_setup.md` → "Mac (simulation)"](../docs/01_environment_setup.md#mac-simulation) for why, and for the Ubuntu-in-a-VM path that does work (headless mode).
+
 `gz_env.sh` is the single source of truth for `GZ_SIM_*` resource and plugin paths. Sourced by all launchers — do not set these paths manually.
 
 ---

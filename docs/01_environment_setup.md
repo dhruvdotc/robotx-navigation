@@ -25,6 +25,30 @@ If it still fails: `tccutil reset Camera`
 
 ---
 
+## Mac (simulation)
+
+Native macOS cannot run the Gazebo/VRX sim stack directly, for three reasons that are all upstream, not this repo:
+
+- Gazebo Harmonic has an open bug where any robot with a rendering sensor (our nadir camera) can crash the sim on macOS — Metal contexts are only allowed on the main thread, but gz-sim's sensor renderer creates them off-thread ([gz-sim#2877](https://github.com/gazebosim/gz-sim/issues/2877)).
+- VRX (the animated-ocean plugin) has no confirmed working build for the Harmonic-era branch this repo uses on macOS.
+- ROS 2 Humble has no official Apple Silicon build. RoboStack's conda packages exist, but the `ros-gz` bridge for Harmonic has no `arm64` binary at all, only `amd64` ([ros_gz#614](https://github.com/gazebosim/ros_gz/issues/614)).
+
+The reliable path is to run the same Ubuntu 22.04 setup documented below, unmodified, inside a Linux VM — using `amd64` packages via Rosetta so nothing is missing:
+
+1. Install [OrbStack](https://orbstack.dev) (native Apple Silicon, free for personal use) or [UTM](https://mac.getutm.app/).
+2. Create an `amd64` Ubuntu 22.04 machine — the `arm64` build of the ROS-Gazebo bridge package doesn't exist, `amd64` does, and Rosetta makes this close to native speed:
+   ```bash
+   orb create --arch amd64 ubuntu:jammy robotx-sim
+   orb -m robotx-sim
+   ```
+3. Inside the machine, clone the repo and follow the **Ubuntu 22.04 / WSL (simulation)** steps below exactly as written.
+
+Headless runs (`bash simulation/run_course.sh --course 1`, no `--visual`) are the reliable path — the camera sensor renders in software inside the VM, no display needed. The 4-window `--visual` GUI mode is not: it needs an X11 server on the Mac host (XQuartz), and OpenGL apps forwarded that way — which includes Gazebo's own 3D viewer — are known to fail even with software rendering. Stick to headless mode on Mac; use `--visual` on a real Ubuntu box or WSLg if you need the live windows.
+
+Expect slower wall-clock time than native Linux — Rosetta translation plus virtualization adds overhead to the physics/render loop.
+
+---
+
 ## Ubuntu 22.04 / WSL (simulation)
 
 ### 1. Base Python environment
