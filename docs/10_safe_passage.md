@@ -1,4 +1,4 @@
-# Safe Passage Task — Detection Implementation Plan
+# Safe Passage Task - Detection Implementation Plan
 
 **RobotX 2026, Task 1 ("Safe Passage"), page 56.** Cross-checked against the
 live *2026 Maritime RobotX Challenge Team Handbook* (rev. 2026-03-30), sections
@@ -18,8 +18,8 @@ The surface vehicle must navigate through a channel marked by buoys. The UAV's j
 
 | Light state | Color | Meaning |
 |---|---|---|
-| **Flashing** | Red | Starboard side of channel — surface vehicle passes on its **right** |
-| **Flashing** | Green | Port side of channel — surface vehicle passes on its **left** |
+| **Flashing** | Red | Starboard side of channel - surface vehicle passes on its **right** |
+| **Flashing** | Green | Port side of channel - surface vehicle passes on its **left** |
 | **Flashing** | Blue | Safe **entry** point to the channel |
 | **Solid** | Blue | Safe **exit** point from the channel |
 | **Off** | Black / unlit | Present, must be detected and classified as "off" |
@@ -47,7 +47,7 @@ The three gaps below each need a distinct solution.
 
 ---
 
-## Gap 1 — Flashing vs Solid Detection
+## Gap 1 - Flashing vs Solid Detection
 
 ### The physics
 
@@ -111,7 +111,7 @@ per track to count ON vs OFF frames.
 
 ---
 
-## Gap 2 — Black / Off Buoy Detection
+## Gap 2 - Black / Off Buoy Detection
 
 ### Why the current pipeline misses them
 
@@ -122,13 +122,13 @@ S_min = sat_floor (default 50)
 V_min = val_floor (default 45)
 ```
 
-A black, unlit buoy sits at S≈0, V<80 — well below both floors. Stage-1 proposals are generated from Canny edges; a dark buoy on dark water is also low-contrast, producing few edges.
+A black, unlit buoy sits at S≈0, V<80 - well below both floors. Stage-1 proposals are generated from Canny edges; a dark buoy on dark water is also low-contrast, producing few edges.
 
 ### Proposed implementation
 
 **Two-stage approach: shape first, color second.**
 
-#### Step A — Saturation-blind shape proposals for dark objects
+#### Step A - Saturation-blind shape proposals for dark objects
 
 Add a parallel proposal channel that does **not** require high saturation, using an adaptive threshold instead of Canny so it finds dark blobs on dark water.
 
@@ -138,7 +138,7 @@ Add a parallel proposal channel that does **not** require high saturation, using
 > `find_detections()` already uses. Block size / C constant are exposed as
 > `--dark-block` (default 51) / `--dark-c` (default 10).
 
-#### Step B — Off-buoy color classification
+#### Step B - Off-buoy color classification
 
 For each dark-blob candidate, classify it as "off" if it is dark **and**
 achromatic (low saturation).
@@ -152,13 +152,13 @@ achromatic (low saturation).
 > bright edge pixels dragging a genuinely dark blob's average up.
 >
 > Reject candidates where any color (red/green/blue) mask exceeds
-> `--min-color-ratio` — those are handled by the existing pipeline, not the
+> `--min-color-ratio` - those are handled by the existing pipeline, not the
 > dark-blob path. **Implemented**: a saturation-verified `black` detection
 > overrides a weak overlapping colour detection at the same blob (see
 > `camera_live_feed.py` `main()` dedup logic) rather than being silently
 > discarded, since `is_off_buoy()` already ruled out a genuinely lit buoy.
 
-#### Step C — YOLO path for off buoys
+#### Step C - YOLO path for off buoys
 
 Retrain the YOLO model with a fourth class: `black`.
 
@@ -170,7 +170,7 @@ Retrain the YOLO model with a fourth class: `black`.
 
 ---
 
-## Gap 3 — Adaptation to Changes in Buoy Color
+## Gap 3 - Adaptation to Changes in Buoy Color
 
 ### When this matters
 
@@ -180,7 +180,7 @@ Two scenarios:
 
 2. **HSV drift:** A buoy that was detected as "red" in low morning light may drift toward orange or even green at noon as ambient color temperature shifts. The reference crops captured at setup time may no longer match in-flight.
 
-### Scenario 1 — Cycling buoys (already partially handled)
+### Scenario 1 - Cycling buoys (already partially handled)
 
 The light buoy in all three sim courses already cycles. `camera_live_feed.py` re-classifies every frame independently, so successive frames will correctly report different colors as the buoy cycles. No code change needed for single-frame classification.
 
@@ -192,9 +192,9 @@ The light buoy in all three sim courses already cycles. `camera_live_feed.py` re
 > effect - fresh `TrackFlashState` - but via track replacement rather than an
 > explicit reset. Worth confirming this is equivalent under real flight noise.
 
-### Scenario 2 — HSV drift / lighting shift
+### Scenario 2 - HSV drift / lighting shift
 
-#### Option A — Periodic online re-calibration (recommended for HSV mode)
+#### Option A - Periodic online re-calibration (recommended for HSV mode)
 
 Every N frames, blend each colour's hue centre toward what's actually being
 observed in high-confidence detections, using a circular EMA so it handles the
@@ -210,7 +210,7 @@ observed in high-confidence detections, using a circular EMA so it handles the
 > arc (same wrap-safe idea as the `blend_hue()` sketch below), just
 > implemented as a full circular-mean blend rather than a fixed±90° diff.
 
-#### Option B — Retrain YOLO in the field (for major lighting shifts)
+#### Option B - Retrain YOLO in the field (for major lighting shifts)
 
 The competition day pipeline already supports rapid re-capture + retrain.
 
@@ -248,9 +248,9 @@ The surface vehicle autonomy node consumes this and applies the RobotX port/star
 |---|---|---|
 | red | flashing | Pass on starboard |
 | green | flashing | Pass on port |
-| blue | flashing | This is the channel entry — approach it |
-| blue | solid | This is the channel exit — you are through |
-| any | off | Obstacle — avoid |
+| blue | flashing | This is the channel entry - approach it |
+| blue | solid | This is the channel exit - you are through |
+| any | off | Obstacle - avoid |
 
 ---
 
@@ -258,10 +258,10 @@ The surface vehicle autonomy node consumes this and applies the RobotX port/star
 
 | Priority | Item | Effort | Blocking? | Status |
 |---|---|---|---|---|
-| **P1** | Off-buoy detection (adaptive threshold + dark-blob class) | ~1 day | Yes — course may have off buoys | ✅ Done - `--detect-off-buoys` |
-| **P2** | Flashing vs solid classifier (temporal accumulator) | ~1 day | Yes — required to distinguish entry/exit | ✅ Done - `--classify-flash` |
-| **P3** | Color re-adaptation (online HSV EMA) | ~2 hours | No — fallback is re-run with new reference crops | ✅ Done - `--online-recolor` |
-| **P4** | YOLO fourth class `black` | ~4 hours + data collect | No — HSV dark-blob path covers it for now | Not started (stretch) |
+| **P1** | Off-buoy detection (adaptive threshold + dark-blob class) | ~1 day | Yes - course may have off buoys | ✅ Done - `--detect-off-buoys` |
+| **P2** | Flashing vs solid classifier (temporal accumulator) | ~1 day | Yes - required to distinguish entry/exit | ✅ Done - `--classify-flash` |
+| **P3** | Color re-adaptation (online HSV EMA) | ~2 hours | No - fallback is re-run with new reference crops | ✅ Done - `--online-recolor` |
+| **P4** | YOLO fourth class `black` | ~4 hours + data collect | No - HSV dark-blob path covers it for now | Not started (stretch) |
 
 ---
 

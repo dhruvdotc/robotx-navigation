@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ablation_preprocessing.py — Preprocessing pipeline ablation study.
+ablation_preprocessing.py - Preprocessing pipeline ablation study.
 
 Compares 4 preprocessing variants on the same 65 raw val images with
 the same frozen YOLO weights and same GT labels.  Answers the question:
@@ -16,7 +16,7 @@ Pipelines tested
 Fair test
 ---------
   • Raw captures for the val images are read from ../captures/
-    (identified via split_manifest.txt — same seed=42 split as training).
+    (identified via split_manifest.txt - same seed=42 split as training).
   • GT labels are the existing dataset/labels/val/ YOLO .txt files
     (positions do not change with colour preprocessing).
   • Model weights are unchanged: training/balloon_proper/weights/best.pt
@@ -46,7 +46,7 @@ def clahe_yuv(img: np.ndarray) -> np.ndarray:
 def clahe_lab(img: np.ndarray) -> np.ndarray:
     """CLAHE on L channel in perceptually-uniform LAB space.
     Normalises luma without touching the a/b colour axes, so hue is
-    unaffected — unlike YUV where Y bleed can shift chroma slightly."""
+    unaffected - unlike YUV where Y bleed can shift chroma slightly."""
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2Lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     lab[:, :, 0] = clahe.apply(lab[:, :, 0])
@@ -71,7 +71,7 @@ def unsharp_gaussian(img: np.ndarray, sigma: float = 1.0, strength: float = 0.8)
 def unsharp_bilateral(img: np.ndarray, strength: float = 0.8) -> np.ndarray:
     """Edge-preserving unsharp mask using bilateral filter.
     Sharpens buoy boundaries without amplifying the noisy water texture
-    that surrounds them — the primary source of red false positives."""
+    that surrounds them - the primary source of red false positives."""
     blurred = cv2.bilateralFilter(img, d=7, sigmaColor=50, sigmaSpace=50)
     return np.clip(cv2.addWeighted(img, 1.0 + strength, blurred, -strength, 0), 0, 255).astype(np.uint8)
 

@@ -173,7 +173,7 @@ def resolve_intrinsics(
       • Replace calibration/camera_intrinsics_latest.json with the new camera's
         checkerboard calibration output, OR
       • Pass --calibration-file /path/to/new_intrinsics.json at the CLI.
-      All GPS projections then automatically use the new matrix — no source
+      All GPS projections then automatically use the new matrix - no source
       changes required.
 
     Manual override (pinhole-only, no distortion correction):

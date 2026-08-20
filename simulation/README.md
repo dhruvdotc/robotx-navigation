@@ -6,7 +6,7 @@ An ArduPilot-SITL drone flies a nadir camera over RobotX-spec buoy courses on an
 
 ## Quick Start
 
-### Headless — terminal progress, no windows
+### Headless - terminal progress, no windows
 
 ```bash
 bash simulation/run_course.sh --course 1   # straight channel  (~60 s)
@@ -28,7 +28,7 @@ Sample output:
 [10:25:34] 100% | waypoint 4/4 reached: light buoy
 ```
 
-### Visual — 4 windows open simultaneously
+### Visual - 4 windows open simultaneously
 
 ```bash
 bash simulation/run_course.sh --course 1 --visual
@@ -75,7 +75,7 @@ YOLO_MODEL=yolo_comparison_test/path2_switch_proposal/scripts/training/balloon_p
   bash simulation/run_course.sh --course 1
 ```
 
-The `camera_live_feed.py` instance inside the sim automatically applies `color_normalize()` (CLAHE → Gray-World WB → unsharp mask) to every frame before YOLO inference — the same pipeline used during training, so no preprocessing mismatch.
+The `camera_live_feed.py` instance inside the sim automatically applies `color_normalize()` (CLAHE → Gray-World WB → unsharp mask) to every frame before YOLO inference - the same pipeline used during training, so no preprocessing mismatch.
 
 ### Side-by-side HSV vs YOLO comparison
 
@@ -83,7 +83,7 @@ The `camera_live_feed.py` instance inside the sim automatically applies `color_n
 YOLO_MODEL=path/to/best.pt bash simulation/run_course.sh --course 2
 ```
 
-When `YOLO_MODEL` is set, `run_course.sh` launches **two** `accuracy_verify.py` instances in parallel — one HSV (port 14551), one YOLO (port 14553) — writing separate output files so both can be compared from the same flight:
+When `YOLO_MODEL` is set, `run_course.sh` launches **two** `accuracy_verify.py` instances in parallel - one HSV (port 14551), one YOLO (port 14553) - writing separate output files so both can be compared from the same flight:
 
 | File | Detector |
 |------|---------|
@@ -103,7 +103,7 @@ YOLO_MODEL=path/to/best.pt YOLO_CONF=0.35 bash simulation/run_course.sh --course
 
 Default is 0.25. Raising to 0.35–0.40 reduces the ~10% red false-positive rate at the cost of slightly lower recall on borderline detections.
 
-### Jetson competition deployment — TensorRT export
+### Jetson competition deployment - TensorRT export
 
 Export once on the Jetson before competition day for ~3× speedup:
 
@@ -170,7 +170,7 @@ Every run saves to `simulation/sim_tests/run_N/` (N auto-increments):
 
 ## The Three Courses
 
-### Course 1 — Straight Navigation Channel
+### Course 1 - Straight Navigation Channel
 **File:** `gazebo/worlds/robotx_uav_course.sdf`
 **Task inspiration:** RobotX "Safe Passage"
 
@@ -190,7 +190,7 @@ Three red/green gate pairs along a straight East axis, plus a scan-the-code ligh
 
 ---
 
-### Course 2 — Open Water Survey (Lawnmower)
+### Course 2 - Open Water Survey (Lawnmower)
 **File:** `gazebo/worlds/course_2_search_field.sdf`
 **Task inspiration:** RobotX "Scan the Code" + pre-race aerial recon
 
@@ -210,7 +210,7 @@ Seven buoys scattered across a 60×30 m open-water field. The drone runs a five-
 
 ---
 
-### Course 3 — L-Shaped Dogleg
+### Course 3 - L-Shaped Dogleg
 **File:** `gazebo/worlds/course_3_dogleg.sdf`
 **Task inspiration:** RobotX "Gymkhana" / multi-leg obstacle course
 
@@ -296,7 +296,7 @@ python3 simulation/plot_run.py simulation/sim_tests/run_5
 GPS projection in the sim uses the same calibration file as the real Jetson:
 `calibration/camera_intrinsics_latest.json` (fx=1319.07, fy=1407.50, RMS=1.057 px).
 
-All launchers pass `--no-undistort` because ogre2 renders a clean pinhole (no lens distortion in sim). To plug in a different camera — recalibration or new hardware — replace the JSON or pass `--calibration-file /path/to/new.json`. No source changes needed; all GPS math flows exclusively from that file.
+All launchers pass `--no-undistort` because ogre2 renders a clean pinhole (no lens distortion in sim). To plug in a different camera - recalibration or new hardware - replace the JSON or pass `--calibration-file /path/to/new.json`. No source changes needed; all GPS math flows exclusively from that file.
 
 ---
 
@@ -307,9 +307,9 @@ All launchers pass `--no-undistort` because ogre2 renders a clean pinhole (no le
 - VRX built in `~/vrx_ws` (supplies `coast_waves` and the wave plugins). Override with `VRX_GZ=<path>` if installed elsewhere.
 - For YOLO mode: `pip install ultralytics` (already in `requirements.txt`)
 
-**Mac (Apple Silicon):** native macOS can't run this stack — see [`docs/01_environment_setup.md` → "Mac (simulation)"](../docs/01_environment_setup.md#mac-simulation) for why, and for the Ubuntu-in-a-VM path that does work (headless mode).
+**Mac (Apple Silicon):** native macOS can't run this stack - see [`docs/01_environment_setup.md` → "Mac (simulation)"](../docs/01_environment_setup.md#mac-simulation) for why, and for the Ubuntu-in-a-VM path that does work (headless mode).
 
-`gz_env.sh` is the single source of truth for `GZ_SIM_*` resource and plugin paths. Sourced by all launchers — do not set these paths manually.
+`gz_env.sh` is the single source of truth for `GZ_SIM_*` resource and plugin paths. Sourced by all launchers - do not set these paths manually.
 
 ---
 
@@ -350,7 +350,7 @@ Color values are tuned to what the sensor actually renders: scene lighting shift
 ## Technical Notes
 
 - ogre2 ignores the camera `<distortion>` block ("ImageBrownDistortionModel is not supported in ogre2"), so the render is a clean pinhole. All launchers already pass `--no-undistort`.
-- Do not reboot the flight controller in place during a run — it breaks gz lockstep. Restart both processes together.
+- Do not reboot the flight controller in place during a run - it breaks gz lockstep. Restart both processes together.
 - "ArduPilot controller has reset" a couple of times at startup is normal. A continuous loop is not.
 - Green buoys use spring-green emissive (OpenCV hue ~81) to stay within the HSV green range (75–105) without bleeding into blue (100–130).
 - Live MAVLink telemetry (`mavlink_telemetry.py`) streams the drone's position to `accuracy_verify.py` so each detection's GPS coordinate is computed from the drone's actual position at that instant, not the position at script startup. This was a key fix for stale GPS projection (Stage 3 bug).

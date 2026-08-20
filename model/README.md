@@ -60,7 +60,7 @@ It chains, failing fast and loud at the validation gate:
 | 3 | `02_finetune.py` *(skippable)* | `path2_training/balloon_finetune/…` + `path2_results/` | quick in-sample preview, not the honest number |
 | 4 | `validation_step1_proper_split.py` | `dataset/{images,labels}/{train,val}` | "Val set: N images (split at RAW level …)" |
 | 5 | `validation_step2_retrain.py` | **`training/balloon_proper/weights/best.pt`** + `honest_map50.txt` | "Best mAP50 on HELD-OUT val set: 0.9xx" |
-| — | **validation gate** | — | run aborts if held-out mAP50 < `--min-map50` |
+| - | **validation gate** | - | run aborts if held-out mAP50 < `--min-map50` |
 | 6 | `validation_step3_val_inference.py` | `honest_results.txt` + `val_annotated/` | per-class P/R/F1, mAP50 |
 | 7 | `validation_step4_overfit_check.py` | `loss_curves.png` | VERDICT: HEALTHY (val-train loss gap < 0.05) |
 | 8 | `validation_step5_stress_test.py` | `stress_test_results.txt` + `stress_strip.png` | retention rate under UAV noise |
