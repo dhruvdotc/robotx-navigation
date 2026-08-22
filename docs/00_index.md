@@ -18,6 +18,7 @@
 | [08_annotation_and_training.md](08_annotation_and_training.md) | Auto-label → fine-tune YOLO → validate → deploy best.pt |
 | [09_competition_day.md](09_competition_day.md) | Competition day cheat sheet - full sequence start to finish |
 | [10_safe_passage.md](10_safe_passage.md) | Safe Passage task: flashing/solid/off buoy detection + live color re-adaptation |
+| [simulink_bridge/README.md](simulink_bridge/README.md) | Simulink GPS/IMU bridge — what is statically validated vs what needs a live run |
 
 ---
 
