@@ -1,3 +1,8 @@
+# ---------------------------------------------------------------------------
+# Static topics -- bridged on every course run via ros_gz_image image_bridge
+# and ros_gz_bridge parameter_bridge (see simulation/run_course.sh).
+# ---------------------------------------------------------------------------
+
 - ros_topic_name: "/drone/camera"
   gz_topic_name: "/drone/camera"
   ros_type_name: "sensor_msgs/msg/Image"
@@ -8,4 +13,27 @@
   gz_topic_name: "/clock"
   ros_type_name: "rosgraph_msgs/msg/Clock"
   gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# Ground-truth odometry from the OdometryPublisher plugin on iris_uav/model.sdf.
+# Simulink (gps_navsatfix_sim.slx) subscribes here, injects GPS noise, and
+# republishes a noisy NavSatFix on /fix.
+- ros_topic_name: "/model/iris_uav/odometry"
+  gz_topic_name: "/model/iris_uav/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS
+
+# IMU from the iris_with_standoffs imu_link sensor.
+# NOTE: the gz topic path includes the world name, which varies per course:
+#   Course 1: /world/robotx_uav_course/model/...
+#   Course 2: /world/course_2_search_field/model/...
+#   Course 3: /world/course_3_dogleg/model/...
+# run_course.sh interpolates ${WORLD_NAME} at launch time and passes the
+# correct topic to parameter_bridge as a CLI argument (not via this file).
+# The entry below is Course 1 for reference only.
+- ros_topic_name: "/imu/data"
+  gz_topic_name: "/world/robotx_uav_course/model/iris_uav/model/iris_with_standoffs/link/imu_link/sensor/imu_sensor/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
   direction: GZ_TO_ROS

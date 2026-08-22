@@ -204,6 +204,7 @@ kill_all_sim() {
   pkill -9 -f "simulation/gazebo/worlds"    2>/dev/null
   pkill -9 -f "light_buoy_cycler.py"       2>/dev/null
   pkill -9 -f "image_bridge"               2>/dev/null
+  pkill -9 -f "parameter_bridge"          2>/dev/null
   pkill -9 -f "accuracy_verify.py"         2>/dev/null
   pkill -9 -f "camera_live_feed.py"        2>/dev/null
   pkill -9 -f "gps_display.py"             2>/dev/null
@@ -214,7 +215,7 @@ kill_all_sim() {
 # --------------------------------------------------------------------------- #
 # PIDs to clean up on exit
 # --------------------------------------------------------------------------- #
-GZ_PID=""; SITL_PID=""; BRIDGE_PID=""; CYCLER_PID=""
+GZ_PID=""; SITL_PID=""; BRIDGE_PID=""; SENSOR_BRIDGE_PID=""; CYCLER_PID=""
 FLY_PID=""; VERIFY_PID=""; VERIFY_YOLO_PID=""
 SITL_XT_PID=""; CAM_XT_PID=""; GPS_XT_PID=""
 CLEANED=0
@@ -240,7 +241,7 @@ cleanup() {
   done
 
   # 2. Terminate tracked PIDs (xterms, fly, cycler, gz, sitl, bridge).
-  for pid_var in GPS_XT_PID CAM_XT_PID SITL_XT_PID FLY_PID CYCLER_PID BRIDGE_PID SITL_PID GZ_PID; do
+  for pid_var in GPS_XT_PID CAM_XT_PID SITL_XT_PID FLY_PID CYCLER_PID SENSOR_BRIDGE_PID BRIDGE_PID SITL_PID GZ_PID; do
     eval pid="\${${pid_var}:-}"
     [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
   done
@@ -395,6 +396,19 @@ bash -c "source '${ROS_SETUP}'; export GZ_VERSION=harmonic; \
   exec ros2 run ros_gz_image image_bridge /drone/camera" \
   >>"$GZ_LOG" 2>&1 &
 BRIDGE_PID=$!
+
+# Sensor bridge: odometry (nav_msgs/Odometry) + IMU (sensor_msgs/Imu).
+# These feed the Simulink GPS/IMU noise-injection layer (gps_navsatfix_sim.slx)
+# which republishes a noisy NavSatFix on /fix. The IMU gz topic embeds the
+# world name, so it is interpolated here rather than hardcoded in bridge.yaml.
+GZ_IMU_TOPIC="/world/${WORLD_NAME}/model/iris_uav/model/iris_with_standoffs/link/imu_link/sensor/imu_sensor/imu"
+pmsg "      Starting gz->ROS sensor bridge (odometry + IMU for Simulink)..."
+bash -c "source '${ROS_SETUP}'; export GZ_VERSION=harmonic; \
+  exec ros2 run ros_gz_bridge parameter_bridge \
+    /model/iris_uav/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry \
+    '${GZ_IMU_TOPIC}@sensor_msgs/msg/Imu[gz.msgs.IMU'" \
+  >>"$GZ_LOG" 2>&1 &
+SENSOR_BRIDGE_PID=$!
 
 # --------------------------------------------------------------------------- #
 # 4. Visual mode: open the display windows

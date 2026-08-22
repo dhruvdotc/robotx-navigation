@@ -178,6 +178,7 @@ Current augmentations: Gaussian blur, random-angle motion blur (13×13 kernel), 
 - [x] `07_roadmap.md` - this file
 - [x] `08_annotation_and_training.md` - YOLO annotation + training pipeline
 - [x] `09_competition_day.md` - competition day cheat sheet
+- [x] `11_simulink_sensor_sim.md` - Simulink GPS/IMU noise injection layer
 
 ---
 

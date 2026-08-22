@@ -288,5 +288,19 @@
     <!-- JointPositionController plugins for the gimbal joints are likewise
          removed; there are no gimbal::{roll,pitch,yaw}_joint to drive. -->
 
+    <!-- Odometry publisher: makes the drone's ground-truth pose available as
+         /model/iris_uav/odometry (nav_msgs/Odometry via ros_gz_bridge).
+         Used by the Simulink GPS/IMU noise-injection layer (gps_navsatfix_sim.slx)
+         which subscribes to this topic, adds realistic sensor noise, and
+         republishes a noisy sensor_msgs/NavSatFix on /fix.
+         30 Hz matches the ArduPilot IMU update rate. -->
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <odom_topic>/model/iris_uav/odometry</odom_topic>
+      <robot_base_frame>iris_with_standoffs::base_link</robot_base_frame>
+      <odom_frame>odom</odom_frame>
+      <publish_rate>30</publish_rate>
+    </plugin>
+
   </model>
 </sdf>
