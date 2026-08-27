@@ -65,12 +65,46 @@ ros2 topic hz /imu/data
 
 ---
 
+### Layer 2b — Mock Simulink publisher (Docker-only test, no MATLAB needed)
+
+`simulation/mock_fix_publisher.py` mirrors `gps_navsatfix_sim.slx` exactly:
+subscribes to `/model/iris_uav/odometry`, applies the same fix-type state machine
+(RTK-float 75%, DGPS 20%, single-point 5%), and publishes noisy `NavSatFix` on `/fix`.
+
+```bash
+# Inside the sim container, after run_course.sh --course 1
+source /opt/ros/humble/setup.bash
+python3 simulation/mock_fix_publisher.py --datum-lat -35.363262 --datum-lon 149.165237
+# Then verify:
+ros2 topic echo /fix --once
+```
+
+Use this to validate Layer 3 without needing MATLAB reachability from Docker.
+
+### Layer 2c — Real MATLAB → Docker (when native Ubuntu isn't available)
+
+DDS multicast doesn't cross the Colima VM boundary. Use the unicast profile in
+`docker/fastdds_colima.xml`:
+
+```bash
+# 1. Get the Colima VM IP
+colima ssh -- ip addr show eth0 | grep "inet "
+
+# 2. Edit docker/fastdds_colima.xml — replace COLIMA_VM_IP with that address
+
+# 3. In MATLAB, before ros2node():
+setenv('FASTRTPS_DEFAULT_PROFILES_FILE', '/path/to/docker/fastdds_colima.xml')
+setenv('ROS_DOMAIN_ID', '0')
+```
+
+Then open `gps_navsatfix_sim.slx` and run — MATLAB will connect to the container's topics.
+
 ### Layer 3 — Noisy GPS feeds into buoy pipeline
 
 | Test | How to check | Expected |
 |---|---|---|
 | `accuracy_verify.py` or `camera_live_feed.py` can subscribe to `/fix` | Requires code addition (see below) | Not yet implemented — `/fix` subscriber not wired in |
-| GPS error from Simulink noise model is measurable | Compare `accuracy_report.md` with and without Simulink noise | Error should increase from baseline 0.16 m mean |
+| GPS error from Simulink noise model is measurable | Compare `accuracy_report.md` with and without mock noise | Error should increase from baseline 0.16 m mean |
 | Noisy GPS via ArduCopter EKF (Option 2 — recommended) | Bridge `/fix` → `GPS_RAW_INT` MAVLink, watch EKF output | EKF absorbs noise; pipeline unchanged |
 
 Layer 3 is entirely **not yet implemented**. The current pipeline reads GPS from MAVLink (`--connect`) and ignores `/fix` entirely. See `11_simulink_sensor_sim.md → Next steps to integrate /fix into the pipeline` for the two implementation options.
@@ -80,9 +114,10 @@ Layer 3 is entirely **not yet implemented**. The current pipeline reads GPS from
 ## Summary
 
 ```
-Layer 1  Gazebo → ROS 2 bridge        static ✅   live run ❌ (needs Ubuntu)
-Layer 2  Simulink .slx → /fix         static n/a  live run ❌ (needs MATLAB + Ubuntu)
-Layer 3  /fix → buoy pipeline                      not yet implemented ❌
+Layer 1   Gazebo → ROS 2 bridge        static ✅   live run ❌ (needs Docker build)
+Layer 2   Simulink .slx → /fix         static n/a  live run ❌ (needs MATLAB + Docker networking)
+Layer 2b  mock_fix_publisher.py        ready ✅    run inside Docker container
+Layer 3   /fix → buoy pipeline                      not yet implemented ❌
 ```
 
 The only thing blocking Layer 1 from being confirmed is SSH access to the Ubuntu machine. Layer 2 additionally needs the correct MATLAB version confirmed. Layer 3 is a code task.

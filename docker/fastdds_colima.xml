@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+FastDDS unicast profile so MATLAB (on the Mac host) can discover ROS 2 topics
+published inside a Docker/Colima container.
+
+Colima's Linux VM has a virtual network (usually 192.168.5.x or 192.168.64.x).
+Find the VM IP with:  colima ssh -- ip addr show eth0 | grep "inet "
+
+Replace COLIMA_VM_IP below with that IP, then in MATLAB before ros2node():
+  setenv('FASTRTPS_DEFAULT_PROFILES_FILE', '/path/to/docker/fastdds_colima.xml')
+  setenv('ROS_DOMAIN_ID', '0')
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <participant profile_name="colima_unicast" is_default_profile="true">
+    <rtps>
+      <builtin>
+        <metatrafficUnicastLocatorList>
+          <locator>
+            <udpv4>
+              <!-- Replace with your Colima VM IP: colima ssh -- ip addr show eth0 -->
+              <address>COLIMA_VM_IP</address>
+              <port>7400</port>
+            </udpv4>
+          </locator>
+        </metatrafficUnicastLocatorList>
+        <initialPeersList>
+          <locator>
+            <udpv4>
+              <address>COLIMA_VM_IP</address>
+              <port>7400</port>
+            </udpv4>
+          </locator>
+        </initialPeersList>
+        <use_WriterLivelinessProtocol>false</use_WriterLivelinessProtocol>
+      </builtin>
+    </rtps>
+  </participant>
+</profiles>
