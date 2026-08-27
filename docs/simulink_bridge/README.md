@@ -54,7 +54,8 @@ colima ssh -- docker build \
   /Users/xurui/Downloads/ROBOTX/robotx-navigation
 
 # 3. Start a persistent container with the repo volume-mounted
-docker run -d --name robotx-sim \
+#    (skip if already running: `docker ps | grep robotx-sim`)
+colima ssh -- docker run -d --name robotx-sim \
   -v /Users/xurui/Downloads/ROBOTX/robotx-navigation:/ws/robotx-navigation \
   robotx-sim bash -c 'sleep infinity'
 
@@ -67,9 +68,9 @@ Expected output (passing):
 ```
 ✅ /model/iris_uav/odometry present
 ✅ IMU topic present
-  Odometry rate: ~50 Hz
+  Odometry rate: ~100 Hz  (no autopilot = unlocked physics; ~30 Hz on full stack)
 ✅ /fix topic present
-  /fix rate: ~5 Hz
+  /fix rate: 5.000 Hz
   latitude: -35.363258   longitude: 149.165243
 ```
 
