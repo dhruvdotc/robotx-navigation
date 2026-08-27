@@ -39,6 +39,44 @@ instead of multicast (which Docker blocks by default).
 
 ---
 
+## How to run the Docker E2E test
+
+Requires: [Colima](https://github.com/abiosoft/colima) + Docker on macOS (Apple Silicon or x86).
+
+```bash
+# 1. Start Colima (if not already running)
+colima start --cpu 4 --memory 8
+
+# 2. Build the image (first time only — ~10 min)
+colima ssh -- docker build \
+  -f /Users/xurui/Downloads/ROBOTX/robotx-navigation/docker/sim.Dockerfile \
+  -t robotx-sim \
+  /Users/xurui/Downloads/ROBOTX/robotx-navigation
+
+# 3. Start a persistent container with the repo volume-mounted
+docker run -d --name robotx-sim \
+  -v /Users/xurui/Downloads/ROBOTX/robotx-navigation:/ws/robotx-navigation \
+  robotx-sim bash -c 'sleep infinity'
+
+# 4. Run the e2e test (takes ~40 s)
+colima ssh -- docker exec robotx-sim \
+  bash /ws/robotx-navigation/docker/run_e2e_test.sh
+```
+
+Expected output (passing):
+```
+✅ /model/iris_uav/odometry present
+✅ IMU topic present
+  Odometry rate: ~50 Hz
+✅ /fix topic present
+  /fix rate: ~5 Hz
+  latitude: -35.363258   longitude: 149.165243
+```
+
+Logs saved to `simulation/sim_tests/e2e_docker_<timestamp>/`.
+
+---
+
 ## What has been validated (offline / static)
 
 | Item | Method | Result |
