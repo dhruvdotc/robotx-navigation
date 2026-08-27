@@ -32,6 +32,7 @@ import os
 import re
 import signal
 import sys
+import threading
 import time
 from datetime import datetime
 
@@ -43,6 +44,8 @@ sys.path.insert(0, REPO)
 import camera_live_feed as clf  # noqa: E402  (the real pipeline, reused verbatim)
 from color_utils import color_normalize, load_color_ranges  # noqa: E402
 from mavlink_telemetry import Telemetry  # noqa: E402
+
+EARTH_R = 6_371_000.0  # metres
 
 
 # --------------------------------------------------------------------------- #
@@ -315,6 +318,12 @@ def main():
                     help="Suffix report/summary/csv filenames with _NAME (e.g. 'yolo'), so an "
                          "HSV run and a YOLO run can write to the same --out-dir/--report-dir "
                          "side by side without clobbering each other's output.")
+    ap.add_argument("--use-fix", action="store_true",
+                    help="Subscribe to /fix (sensor_msgs/NavSatFix from mock_fix_publisher.py "
+                         "or gps_navsatfix_sim.slx) and use that as the drone GPS position "
+                         "instead of MAVLink LOCAL_POSITION_NED. Falls back to MAVLink when "
+                         "/fix hasn't been received yet. Use --tag fix to keep output files "
+                         "separate from the MAVLink baseline run.")
     args = ap.parse_args()
 
     buoys, datum = parse_world(args.world)
@@ -394,7 +403,7 @@ def main():
     writer.writerow(["timestamp", "color", "confidence", "cx", "cy",
                      "off_north_m", "off_east_m", "drone_north_m", "drone_east_m",
                      "alt_m", "roll_deg", "pitch_deg",
-                     "est_north_m", "est_east_m", "est_lat", "est_lon"])
+                     "est_north_m", "est_east_m", "est_lat", "est_lon", "gps_source"])
 
     class Det(Node):
         def __init__(self):
@@ -405,6 +414,19 @@ def main():
             self.tracks = []
             self.nid = 1
             self.create_subscription(Image, args.ros_topic, self.cb, 10)
+            # Optional /fix subscriber (Layer 3 — Simulink or mock GPS noise).
+            self._fix_lat: float | None = None
+            self._fix_lon: float | None = None
+            self._fix_lock = threading.Lock()
+            if args.use_fix:
+                from sensor_msgs.msg import NavSatFix  # noqa: PLC0415
+                self.create_subscription(NavSatFix, "/fix", self._fix_cb, 10)
+                self.get_logger().info("Subscribed to /fix — using Simulink/mock GPS noise")
+
+        def _fix_cb(self, msg) -> None:
+            with self._fix_lock:
+                self._fix_lat = msg.latitude
+                self._fix_lon = msg.longitude
 
         def cb(self, msg):
             snap = tel.snapshot()
@@ -448,22 +470,42 @@ def main():
                 self.tracks, dets, cl_args.track_gate_px, cl_args.max_track_missed, self.nid)
 
             now = time.time()
+            with self._fix_lock:
+                fix_lat = self._fix_lat
+                fix_lon = self._fix_lon
+
             for det, tid, (sx, sy) in assigned:
                 n_off, e_off = clf.project_pixel_to_ground_ned(sx, sy, intr, alt)
-                est_n = snap["north"] + n_off
-                est_e = snap["east"] + e_off
-                est_lat, est_lon = clf.ned_to_gps(est_n, est_e, datum["lat"], datum["lon"])
+
+                if args.use_fix and fix_lat is not None:
+                    # Layer 3: use Simulink/mock noisy GPS as the drone's position.
+                    # Project the pixel NED offset (metres) onto the noisy lat/lon
+                    # directly, avoiding any drift that accumulates in MAVLink NED.
+                    est_lat = fix_lat + (n_off / EARTH_R) * (180.0 / math.pi)
+                    est_lon = fix_lon + (e_off / (EARTH_R * math.cos(math.radians(fix_lat)))) * (180.0 / math.pi)
+                    # Back-compute NED for CSV consistency
+                    est_n = (est_lat - datum["lat"]) * math.pi / 180.0 * EARTH_R
+                    est_e = (est_lon - datum["lon"]) * math.pi / 180.0 * EARTH_R * math.cos(math.radians(datum["lat"]))
+                    gps_src = "fix"
+                else:
+                    # Default: MAVLink LOCAL_POSITION_NED + datum offset
+                    est_n = snap["north"] + n_off
+                    est_e = snap["east"] + e_off
+                    est_lat, est_lon = clf.ned_to_gps(est_n, est_e, datum["lat"], datum["lon"])
+                    gps_src = "mavlink"
+
                 rows.append(dict(color=det.color, confidence=det.confidence,
                                  est_north=est_n, est_east=est_e))
                 writer.writerow([f"{now:.3f}", det.color, f"{det.confidence:.4f}",
                                  f"{sx:.1f}", f"{sy:.1f}", f"{n_off:+.3f}", f"{e_off:+.3f}",
                                  f"{snap['north']:+.3f}", f"{snap['east']:+.3f}", f"{alt:.2f}",
                                  f"{roll_d:+.2f}", f"{pitch_d:+.2f}",
-                                 f"{est_n:+.3f}", f"{est_e:+.3f}", f"{est_lat:.8f}", f"{est_lon:.8f}"])
+                                 f"{est_n:+.3f}", f"{est_e:+.3f}", f"{est_lat:.8f}", f"{est_lon:.8f}",
+                                 gps_src])
                 state["logged"] += 1
                 print(f"[LOG] {det.color:<5} conf={det.confidence:.2f} "
                       f"est NED=N{est_n:+.2f} E{est_e:+.2f} (alt {alt:.1f}m, "
-                      f"roll{roll_d:+.1f} pitch{pitch_d:+.1f})", flush=True)
+                      f"roll{roll_d:+.1f} pitch{pitch_d:+.1f}) [{gps_src}]", flush=True)
             csv_file.flush()
 
     rclpy.init()
