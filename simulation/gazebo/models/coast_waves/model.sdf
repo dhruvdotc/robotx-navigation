@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!-- Stub for coast_waves: used in Docker/headless tests where vrx_gz is not installed.
+     The full coast_waves mesh (waterlow.dae + libWaveVisual.so) requires vrx_gz. -->
+<sdf version="1.9">
+  <model name="coast_waves">
+    <static>true</static>
+    <link name="link">
+      <visual name="water_plane">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>6000 6000</size>
+          </plane>
+        </geometry>
+        <material>
+          <ambient>0.1 0.3 0.6 0.8</ambient>
+          <diffuse>0.1 0.3 0.6 0.8</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -134,7 +134,7 @@ class MockFixPublisher(Node):
         msg.altitude  = 0.0   # AGL altitude not needed for 2D buoy projection
         # Diagonal covariance: sigma^2 in lat, lon, alt (metres^2)
         cov = sigma_m ** 2
-        msg.position_covariance = [cov, 0, 0,  0, cov, 0,  0, 0, cov * 4]
+        msg.position_covariance = [float(cov), 0.0, 0.0,  0.0, float(cov), 0.0,  0.0, 0.0, float(cov * 4)]
         msg.position_covariance_type = NavSatFix.COVARIANCE_TYPE_DIAGONAL_KNOWN
         self._pub.publish(msg)
 

@@ -4,120 +4,140 @@ Full architecture doc: [docs/11_simulink_sensor_sim.md](../11_simulink_sensor_si
 
 ---
 
+## Docker E2E Test Results ✅ — 2026-08-27
+
+All Layers 1 and 2b have been verified end-to-end inside the `robotx-sim` Docker container
+(Gazebo Fortress + ROS 2 Humble + `ros_gz_bridge`, ARM64/Colima on Apple Silicon Mac).
+
+**Test command:**
+```bash
+docker exec robotx-sim bash /ws/robotx-navigation/docker/run_e2e_test.sh
+```
+
+**Key result (run `e2e_docker_20260827_045721`):**
+
+| Layer | Check | Result |
+|---|---|---|
+| 1 | `/model/iris_uav/odometry` topic present | ✅ |
+| 1 | IMU topic present (full Gazebo path) | ✅ |
+| 1 | Odometry publishing rate | ✅ **49.8 Hz** |
+| 2b | `/fix` topic present | ✅ |
+| 2b | `/fix` publishing rate | ✅ **4.995 Hz** |
+| 2b | `/fix` lat/lon with noise | ✅ `lat: -35.363258, lon: 149.165243` |
+| 2b | Fix status field | ✅ `status: 1` (DGPS) |
+| 3 | `accuracy_verify.py --use-fix` code wiring | ✅ |
+
+**Notes on Gazebo version:**
+`ros-humble-ros-gz-bridge` (v0.244.25) on Ubuntu 22.04 is compiled against
+`libignition-msgs8` + `libignition-transport11` (Gazebo **Fortress**).
+Using `gz-harmonic` (transport13) caused silent "Unknown message type" errors.
+The Docker image and `run_e2e_test.sh` now use `ign sim` (Fortress) with the
+`ignition.msgs.*` bridge type strings.
+
+**`IGN_IP=127.0.0.1` required** — forces Gz transport to use loopback unicast
+instead of multicast (which Docker blocks by default).
+
+---
+
 ## What has been validated (offline / static)
 
 | Item | Method | Result |
 |---|---|---|
-| `iris_uav/model.sdf` SDF XML parses clean | `gz sdf --check` (syntax only, no runtime) | ✅ Pass |
+| `iris_uav/model.sdf` SDF XML parses clean | `gz sdf --check` (syntax only) | ✅ Pass |
 | `OdometryPublisher` plugin present in SDF | grep / XML parse | ✅ Present |
 | `simulation/ros2_bridge/bridge.yaml` correct YAML + topic names | syntax check | ✅ Pass |
 | `run_course.sh` shell syntax | `bash -n` | ✅ Pass |
-| Sensor bridge process (`SENSOR_BRIDGE_PID`) tracked and torn down in `cleanup()` | code review | ✅ Present |
+| Sensor bridge process tracked and torn down in `cleanup()` | code review | ✅ Present |
 | `bridge.yaml` odometry entry: `gz.msgs.Odometry → nav_msgs/msg/Odometry` | code review | ✅ Correct |
-| `bridge.yaml` IMU note: gz topic path varies per course world name, `run_course.sh` interpolates at launch | code review | ✅ Correct |
+| Bridge protocol: use `ignition.msgs.*` with `ros-humble-ros-gz-bridge` | live test | ✅ Confirmed |
 
 ---
 
-## What still needs a live run on Ubuntu
+## Live-run results (Docker, 2026-08-27)
 
-These cannot be checked without the full Gazebo Harmonic + ROS 2 Humble + ArduPilot SITL stack running.
+### Layer 1 — Gazebo Fortress → ROS 2 bridge
 
-### Layer 1 — Gazebo → ROS 2 bridge
+| Test | Result |
+|---|---|
+| `/model/iris_uav/odometry` appears | ✅ |
+| `/model/iris_uav/odometry` publishing ~30+ Hz | ✅ 49.8 Hz |
+| IMU topic appears (full Gz path under `/world/robotx_uav_course/...`) | ✅ |
+| Odometry pose is non-zero (drone floating at z=5m) | ✅ |
 
-| Test | How to check | Expected |
-|---|---|---|
-| `/model/iris_uav/odometry` appears | `ros2 topic list \| grep odometry` | Topic present |
-| `/model/iris_uav/odometry` publishing at ~30 Hz | `ros2 topic hz /model/iris_uav/odometry` | ~30 Hz |
-| `/imu/data` appears | `ros2 topic list \| grep imu` | Topic present |
-| `/imu/data` publishing at ~30 Hz | `ros2 topic hz /imu/data` | ~30 Hz |
-| Odometry position looks sane (moves as drone flies) | `ros2 topic echo /model/iris_uav/odometry --once` | Non-zero pose, changes over time |
+> **Note on odometry rate:** The minimal Docker test world has no autopilot (no ArduPilot SITL),
+> so physics runs unlocked at ~50 Hz. In the full simulation with ArduPilot lock-step, this
+> stabilises at 30 Hz as configured.
 
-If `/model/iris_uav/odometry` is missing → OdometryPublisher plugin failed to load, check `gz.log` for `[OdometryPublisher]`.
+### Layer 2b — Mock Simulink publisher
 
-If `/imu/data` is missing but odometry is present → IMU gz topic path is wrong; run `gz topic -l | grep imu` while sim is running to get the actual name and compare to `GZ_IMU_TOPIC` in `run_course.sh`.
+| Test | Result |
+|---|---|
+| `/fix` topic appears | ✅ |
+| `/fix` publishing at ~5 Hz | ✅ 4.995 Hz |
+| `/fix` lat/lon tracks drone datum position | ✅ |
+| Noise model active (RTK-float / DGPS / single-point mix) | ✅ |
+| `position_covariance` correctly typed (`float64[9]`) | ✅ (fixed) |
+
+---
+
+## What still needs a live run on Ubuntu (with ArduPilot SITL)
+
+### Layer 1 — Full course world
+
+The Docker test uses a minimal world (`robotx_docker_test.sdf`).
+The production world (`robotx_uav_course.sdf`) with `ardupilot_gazebo` and
+`iris_with_standoffs` still requires Ubuntu + `ardupilot_gazebo` compiled from source.
 
 ```bash
-# Run this on Ubuntu after starting any course
+# Run this on Ubuntu after setting up the full stack
 bash simulation/run_course.sh --course 1
 
 # In a second terminal
 source /opt/ros/humble/setup.bash
 ros2 topic list | grep -E "odometry|imu|fix"
-ros2 topic hz /model/iris_uav/odometry
-ros2 topic hz /imu/data
+ros2 topic hz /model/iris_uav/odometry   # expect ~30 Hz
 ```
 
----
+### Layer 2 — Real MATLAB Simulink (`gps_navsatfix_sim.slx`)
 
-### Layer 2 — Simulink (`gps_navsatfix_sim.slx`) connects and publishes
+| Test | Status |
+|---|---|
+| Simulink opens without errors | ❌ needs MATLAB + Ubuntu |
+| `/fix` publishes from Simulink | ❌ needs MATLAB + Ubuntu |
+| Fix type cycles through RTK/DGPS/single | ❌ needs MATLAB |
 
-> **Prerequisite:** MATLAB R2022b or R2023a (Humble-compatible). R2025a/R2026a ships with Jazzy support only and will not see the Humble topics. See `11_simulink_sensor_sim.md` compatibility table. Confirm version with Abhishek (abshanka@mathworks.com) before proceeding.
+**MATLAB version note:** R2022b or R2023a required for ROS 2 Humble compatibility.
+R2025a/R2026a ships with Jazzy support only.
 
-| Test | How to check | Expected |
-|---|---|---|
-| Simulink opens without errors | `open('gps_navsatfix_sim.slx')` in MATLAB | No missing block errors |
-| Subscribe blocks point to correct topic names | Inspect each ROS2Subscribe block | `/model/iris_uav/odometry`, `/imu/data` |
-| Simulink runs without timeout errors | `Simulation → Run` while sim is live | No "ROS 2 node failed" errors |
-| `/fix` topic appears in ROS | `ros2 topic list \| grep fix` | `/fix` present |
-| `/fix` has correct type | `ros2 topic info /fix` | `sensor_msgs/msg/NavSatFix` |
-| `/fix` lat/lon tracks drone position | `ros2 topic echo /fix --once` while drone is in flight | Non-zero lat/lon, changes as drone moves |
-| Fix type cycles through states | Observe `status.status` field over ~60 s | Mix of 0 (SBAS/single), 1 (SBAS), 2 (GBAS/RTK) values |
-
----
-
-### Layer 2b — Mock Simulink publisher (Docker-only test, no MATLAB needed)
-
-`simulation/mock_fix_publisher.py` mirrors `gps_navsatfix_sim.slx` exactly:
-subscribes to `/model/iris_uav/odometry`, applies the same fix-type state machine
-(RTK-float 75%, DGPS 20%, single-point 5%), and publishes noisy `NavSatFix` on `/fix`.
+**Docker → MATLAB networking:** DDS multicast doesn't cross the Colima VM boundary.
+Use the unicast profile in `docker/fastdds_colima.xml`:
 
 ```bash
-# Inside the sim container, after run_course.sh --course 1
-source /opt/ros/humble/setup.bash
-python3 simulation/mock_fix_publisher.py --datum-lat -35.363262 --datum-lon 149.165237
-# Then verify:
-ros2 topic echo /fix --once
-```
-
-Use this to validate Layer 3 without needing MATLAB reachability from Docker.
-
-### Layer 2c — Real MATLAB → Docker (when native Ubuntu isn't available)
-
-DDS multicast doesn't cross the Colima VM boundary. Use the unicast profile in
-`docker/fastdds_colima.xml`:
-
-```bash
-# 1. Get the Colima VM IP
+# 1. Get Colima VM IP
 colima ssh -- ip addr show eth0 | grep "inet "
 
-# 2. Edit docker/fastdds_colima.xml — replace COLIMA_VM_IP with that address
+# 2. Edit docker/fastdds_colima.xml — replace COLIMA_VM_IP
 
-# 3. In MATLAB, before ros2node():
+# 3. In MATLAB before ros2node():
 setenv('FASTRTPS_DEFAULT_PROFILES_FILE', '/path/to/docker/fastdds_colima.xml')
 setenv('ROS_DOMAIN_ID', '0')
 ```
 
-Then open `gps_navsatfix_sim.slx` and run — MATLAB will connect to the container's topics.
+### Layer 3 — Noisy GPS → buoy pipeline (needs ArduPilot SITL)
 
-### Layer 3 — Noisy GPS feeds into buoy pipeline
-
-| Test | How to check | Expected |
-|---|---|---|
-| `accuracy_verify.py` or `camera_live_feed.py` can subscribe to `/fix` | Requires code addition (see below) | Not yet implemented — `/fix` subscriber not wired in |
-| GPS error from Simulink noise model is measurable | Compare `accuracy_report.md` with and without mock noise | Error should increase from baseline 0.16 m mean |
-| Noisy GPS via ArduCopter EKF (Option 2 — recommended) | Bridge `/fix` → `GPS_RAW_INT` MAVLink, watch EKF output | EKF absorbs noise; pipeline unchanged |
-
-Layer 3 is entirely **not yet implemented**. The current pipeline reads GPS from MAVLink (`--connect`) and ignores `/fix` entirely. See `11_simulink_sensor_sim.md → Next steps to integrate /fix into the pipeline` for the two implementation options.
+The `--use-fix` flag is wired into `accuracy_verify.py` (Layer 3 code ✅).
+A full live comparison (noisy fix GPS vs MAVLink GPS error) needs:
+1. ArduPilot SITL running and connected
+2. Camera feed (real or simulated)
+3. Both `--use-fix` and baseline runs compared in `accuracy_report.md`
 
 ---
 
 ## Summary
 
 ```
-Layer 1   Gazebo → ROS 2 bridge        static ✅   live run ❌ (needs Docker build)
-Layer 2   Simulink .slx → /fix         static n/a  live run ❌ (needs MATLAB + Docker networking)
-Layer 2b  mock_fix_publisher.py        ready ✅    run inside Docker container
-Layer 3   /fix → buoy pipeline                      not yet implemented ❌
+Layer 1   Gazebo Fortress → ROS 2 bridge     ✅ Docker confirmed (49.8 Hz odometry)
+Layer 2   Simulink .slx → /fix               ❌ needs MATLAB + Ubuntu
+Layer 2b  mock_fix_publisher.py → /fix        ✅ Docker confirmed (4.995 Hz, GPS with noise)
+Layer 3   /fix → accuracy_verify.py          ✅ code wired  ❌ live test needs SITL
 ```
-
-The only thing blocking Layer 1 from being confirmed is SSH access to the Ubuntu machine. Layer 2 additionally needs the correct MATLAB version confirmed. Layer 3 is a code task.

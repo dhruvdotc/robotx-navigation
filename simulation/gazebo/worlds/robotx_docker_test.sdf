@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!-- Minimal self-contained Docker test world for Gazebo FORTRESS (ign sim).
+     Keeps world name "robotx_uav_course" so ros_gz_bridge topic paths
+     (/world/robotx_uav_course/...) match the main bridge.yaml exactly.
+     No external model dependencies (no ardupilot_gazebo, no VRX).
+     Used by docker/run_e2e_test.sh to verify Layers 1–2b of the
+     Simulink bridge pipeline without requiring a full simulation stack.
+
+     Plugin names use the Fortress convention (ignition-gazebo-*-system). -->
+<sdf version="1.9">
+  <world name="robotx_uav_course">
+
+    <plugin filename="libignition-gazebo-physics-system.so"
+            name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="libignition-gazebo-user-commands-system.so"
+            name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="libignition-gazebo-scene-broadcaster-system.so"
+            name="ignition::gazebo::systems::SceneBroadcaster"/>
+    <plugin filename="libignition-gazebo-sensors-system.so"
+            name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <gravity>0 0 -9.81</gravity>
+
+    <!-- Datum matches robotx_uav_course.sdf (Canberra test site) -->
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <latitude_deg>-35.363262</latitude_deg>
+      <longitude_deg>149.165237</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+
+    <!-- Flat ground -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="col">
+          <geometry><plane><normal>0 0 1</normal><size>1000 1000</size></plane></geometry>
+        </collision>
+      </link>
+    </model>
+
+    <!-- Minimal iris_uav: single base_link box with OdometryPublisher.
+         No ardupilot_gazebo dependency — physics runs, pose is static.
+         OdometryPublisher fires at 30 Hz, bridged to /model/iris_uav/odometry.
+         Note: robot_base_frame uses the scoped name format for Fortress. -->
+    <model name="iris_uav">
+      <pose>0 0 5 0 0 0</pose>
+      <link name="base_link">
+        <inertial>
+          <mass>1.5</mass>
+          <inertia>
+            <ixx>0.029125</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.029125</iyy><iyz>0</iyz>
+            <izz>0.055225</izz>
+          </inertia>
+        </inertial>
+        <collision name="col">
+          <geometry><box><size>0.47 0.47 0.11</size></box></geometry>
+        </collision>
+        <visual name="vis">
+          <geometry><box><size>0.47 0.47 0.11</size></box></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient></material>
+        </visual>
+        <!-- IMU sensor: publishes on Gz path bridged by run_e2e_test.sh -->
+        <sensor name="imu_sensor" type="imu">
+          <always_on>true</always_on>
+          <update_rate>200</update_rate>
+          <imu/>
+        </sensor>
+      </link>
+
+      <plugin filename="libignition-gazebo-odometry-publisher-system.so"
+              name="ignition::gazebo::systems::OdometryPublisher">
+        <odom_topic>/model/iris_uav/odometry</odom_topic>
+        <robot_base_frame>base_link</robot_base_frame>
+        <odom_frame>odom</odom_frame>
+        <publish_rate>30</publish_rate>
+      </plugin>
+    </model>
+
+  </world>
+</sdf>
