@@ -73,7 +73,21 @@
 set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.bash}"
+# Prefer a source-built ros_gz overlay if one is present: the apt-packaged
+# ros-humble-ros-gz-bridge is compiled against Gazebo Fortress (libignition-*)
+# and silently drops every message (parameter_bridge specifically -- the
+# odometry+IMU sensor bridge below) against a Harmonic `gz sim`, with no error
+# printed anywhere -- confirmed live 2026-09-05: the sensor bridge came up
+# looking fine, but /model/iris_uav/odometry never delivered a single message
+# for the life of the run. A source build overlaying /opt/ros/humble (see
+# docs/11_simulink_sensor_sim.md / simulink/README.md) fixes it. Still
+# override-able via $ROS_SETUP; this only changes the *default*, and falls
+# back to stock ROS if no such overlay exists on this machine.
+if [ -z "${ROS_SETUP:-}" ] && [ -f "${HOME}/ros_gz_overlay_setup.sh" ]; then
+  ROS_SETUP="${HOME}/ros_gz_overlay_setup.sh"
+else
+  ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.bash}"
+fi
 ALTITUDE_M="${ALTITUDE_M:-10}"
 YOLO_MODEL="${YOLO_MODEL:-}"
 YOLO_CONF="${YOLO_CONF:-0.25}"
