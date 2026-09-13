@@ -34,6 +34,7 @@ See `fulldemo/README.md` and `fulldemo/PARTNER_INSTRUCTIONS.md` for WiFi router 
 | `mavlink_comms/` | UDP buoy protocol and ground station |
 | `scripts/` | Jetson WiFi helpers |
 | `simulation/` | Gazebo Harmonic SITL simulation stack |
+| `simulink/` | MATLAB/Simulink sensor noise models (GPS, rangefinder, optical flow), an upgrade over the plain-Python noise stand-in in `simulation/mock_fix_publisher.py` |
 | `calibration/` | Camera intrinsics JSON |
 | `jetson_setup.sh` | Jetson dependency bootstrap |
 | `yolo11n.pt` | YOLO nano model weights |
@@ -96,6 +97,33 @@ bash simulation/run_course.sh --course 1 --visual
 ```
 
 All outputs (detections, accuracy report, GPS map, logs) save to `simulation/sim_tests/run_N/` automatically after each run. See [simulation/README.md](simulation/README.md) for full details.
+
+---
+
+## Sensor Realism: Simulink vs. Plain Python
+
+The simulation stack needs noisy, realistic sensor data, not the perfect
+ground truth Gazebo produces by default. This repo has two ways to generate
+that noise, and the Simulink one is the better of the two.
+
+The original approach is a plain Python script,
+[`simulation/mock_fix_publisher.py`](simulation/mock_fix_publisher.py). It
+fakes GPS noise with a hand-written Markov chain and sigma values picked by
+hand. It works, and it's still what the automated Docker tests use, but
+there's no real sensor model behind the numbers, and every new sensor type
+means writing a new noise heuristic from scratch.
+
+The [`simulink/`](simulink/) folder replaces that with real MATLAB
+Navigation Toolbox `gpsSensor` blocks, matching actual GPS receiver quality
+tiers (RTK-fixed, RTK-float, DGPS, Standard), plus two more sensor models
+built the same way: a rangefinder and an optical flow sensor. All three
+share one block-diagram architecture, so adding a sensor means building a
+new diagram on the same pattern, not writing new noise code. The GPS model
+has been flown live end to end: ArduPilot's own EKF, fed the Simulink-noisy
+GPS, tracked a real flight to within 0.06% of the actual distance flown.
+See [`simulink/README.md`](simulink/README.md) for the full writeup,
+including the real block diagrams and the bugs found and fixed along the
+way.
 
 ---
 

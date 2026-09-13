@@ -269,3 +269,9 @@ jetson_flight_logs/**/*
 !jetson_flight_logs/repo_detection_logs/successful_flight_6_2/**
 jetson_flight_logs/repo_detection_logs/successful_flight_6_2/recording_demo_flight_mac.mp4
 jetson_flight_logs/repo_detection_logs/successful_flight_6_2/recording_demo_flight_mac_screen.mov
+
+# MATLAB / Simulink build and cache artifacts
+*.slxc
+*.autosave
+slprj/
+simulink/+bus_conv_fcns/
