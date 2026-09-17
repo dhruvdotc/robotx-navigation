@@ -33,8 +33,10 @@ Goal: full end-to-end cycle (capture → annotate → train → deploy → test)
 - [x] Sim-trained 3-class model (red/green/BLUE) with honest held-out validation: mAP50 0.991, overfit check HEALTHY - see `yolo_comparison_test/path2_switch_proposal/results_sim_courses_v2/README.md` including its caveats (weak-label GT errors, sim-only imagery)
 - [x] `cv_bridge` NumPy-2 ABI segfault fixed: `camera_live_feed.py` and `accuracy_verify.py` decode rgb8 ROS images manually with numpy
 - [x] Safe Passage UAV detectors (`docs/10_safe_passage.md`): P1 OFF/black buoy (`--detect-off-buoys`), P2 flashing-vs-solid track classifier (`--classify-flash`, the flashing-BLUE-entry vs steady-BLUE-exit discriminator), P3 online HSV EMA re-adaptation (`--online-recolor`). All default-OFF (shipped pipeline unchanged); validated on synthetic + real frames. P4 (YOLO 4th `black` class) is a documented stretch.
-- [x] YOLO reject-only post-filters (`--yolo-size-gate`, `--yolo-min-circularity`) in `find_detections_yolo()` - default OFF, validated no-regression vs a fresh baseline (P0.922/R1.000/mAP50 0.994); the size gate at 10 m AGL was measured to crater recall to 0.404, hence off by default
+- [x] YOLO reject-only post-filters (`--yolo-size-gate`, `--yolo-min-circularity`) in `find_detections_yolo()` - validated vs a fresh baseline (P0.941/R1.000/mAP50 0.994, numbers post GT-fix below). `--yolo-size-gate` stays default OFF: at 10 m AGL it was measured to crater recall to 0.396, since real buoys in the val set render at 55-149 px against a 42 px expected_d (variable capture distance, one fixed-altitude assumption can't separate FP/TP diameters). `--yolo-min-circularity` has no altitude dependency and is now **default 0.5**: measured FP 6→5, recall unchanged at 1.000, precision 0.941→0.950 (`tests/validation/test_yolo_size_gate.py`, circ50 mode)
+- [x] **Val-set GT fix (2026-09-17):** manually audited every remaining post-circ50 FP by projecting both the labeled GT box(es) and the "FP" box in each frame to real-world ground offsets (`project_pixel_to_ground_ned`, same math the live pipeline uses) and matching the relative offset against each course's known buoy layout. `course1_frame_1783758568617.jpg` was missing 2 real labels: a genuine gate pair (a 0.99m-tall, 0.46m-diameter cylinder per the world SDF - matches the RobotX handbook's official buoy spec) viewed off-nadir, which foreshortens into an elongated "pill" shape the HSV auto-labeler never caught. Measured relative offset (dN=2.68m, dE=0.02m) matched the real green/red gate spacing (2.5m, 0m) to within the known-and-documented unmodeled height-parallax bias (no IMU pitch/roll compensation yet, see below) - not a coincidental match. Added the 2 missing labels. The other 5 remaining FPs (course1 x1, course2 x2, course3 x1, loiter x1) were checked the same way and do NOT match any real buoy (residuals 3-9.5m against a 2.5m real spacing) - course2's crate FP additionally confirmed via the world SDF as the literal `d1_brown` distractor prop, just rendered more saturated than its stated material color under that frame's lighting. Net: TP 94->96, FP 8->6 (baseline) / 7->5 (circ50), precision 0.922->0.941 (baseline) / 0.931->0.950 (circ50). Script: not checked in (ad hoc); method is reusable via `project_pixel_to_ground_ned` + each course's buoy table in `simulation/README.md`.
 - [x] `model/` retraining entry point (`model/README.md` + one-command `model/run_pipeline.sh`) - wraps the existing scripts with a fail-fast mAP50 gate; validated end-to-end (mAP50 0.994, overfit HEALTHY, stress retention 97%)
+- [x] Track-confirmation reporting gate (`--min-track-hits`, `Track.hits` in `camera_live_feed.py`) - after circ50, the (then-)7 remaining val-set FPs were pulled and visually inspected (`tests/validation/audit_yolo_fps.py`-style crop dump): all 7 were confident, isolated, single-frame background detections with no recurrence, not a shape or color pattern (an aspect-ratio gate was tried first and **rejected**: TP bbox aspect ratio reaches 1.62 on real buoys, fully overlapping the FP range of 1.02-1.59, so no threshold removes FPs without costing recall - see git history for the measurement). 2 of those 7 were later found to be a real, unlabeled gate pair (see the val-set GT fix entry above) - the conclusions here (no shape/color separator, temporal confirmation is the real lever) hold for the 5 confirmed-genuine FPs that remain. `update_tracks()` previously reported a track's very first match immediately (age 0, no confirmation), so a one-off spurious detection was reported exactly like a real buoy. `--min-track-hits N` delays CSV/GPS/MAVLink/overlay reporting until a track has N total matched frames; the track itself (Kalman state, flash-state history) is unaffected, only reporting is gated. Not measurable against the static single-image val set (no frame sequence to accumulate hits from across independent stills) - validated instead with a synthetic frame-sequence test (`tests/validation/test_track_confirmation.py`): a persistent buoy is eventually reported (a few frames of confirmation latency, negligible at flight framerate), a one-off non-recurring spurious detection is never reported. Default **1** (report on first sight, current behaviour unchanged) pending a live/sim-video run to pick a real threshold - see the CLI help for reasoning.
 
 ---
 
@@ -90,19 +92,34 @@ avoidance is the USV/UUV's job. The UAV's buildable piece is **perception**: not
 misclassifying distractors (olive panels, orange crates, gray barrels) as a
 navigation-buoy colour.
 
-**Measured (A3, 2026-07-31)** on the 65 real held-out course frames that contain
-the sim distractors:
+**Measured (A3, 2026-07-31; numbers corrected 2026-09-17, see the val-set GT
+fix entry above)** on the 65 real held-out course frames that contain the sim
+distractors:
 
 | Detector | On-buoy (TP) | Distractor/bg FP | Precision | Buoy recall |
 |----------|-------------|------------------|-----------|-------------|
-| YOLO (`best.pt`) | 94 | 8 (buoy-shaped: dup boxes / weak-label misses) | 0.922 | 1.00 |
+| YOLO (`best.pt`) | 96 | 6 (all confirmed genuine background/distractor confusions, none are dup boxes or weak-label misses - see below) | 0.941 | 1.00 |
 | HSV two-stage | 75 | 5 (4 green ~olive, 1 red ~orange) | 0.938 | ~0.80 |
 
-Distractors are overwhelmingly suppressed by both paths. Residual: the **olive
-panels occasionally bleed into green** (the documented hue-boundary risk - olive
-hue ~60-70 vs green 75-105), and one orange bled into red. No non-buoy
-"obstacle" reporting channel exists in the pipeline, so none was added (out of
-scope; physical avoidance is the USV's job). Harnesses: `tests/validation/gen_distractor_frames.py`, `tests/validation/test_distractor_suppression.py`.
+The original "8 (buoy-shaped: dup boxes / weak-label misses)" characterization
+of YOLO's FPs was wrong on both counts, found later: `audit_yolo_fps.py`
+showed every one is class "background" (zero IoU with any GT box, not a dup
+or near-miss), and manually checking each one's real-world position
+(`project_pixel_to_ground_ned` + the known course layout) found 2 of the 8
+were actually real, unlabeled buoys - the GT was wrong, not the detector. The
+remaining 6 (5 after the circularity gate, `--yolo-min-circularity`) are
+confirmed genuine: course2's crate FP matches the `d1_brown` distractor prop
+in the world SDF exactly, just rendered more saturated than its material
+color under that frame's lighting; the rest have no clean geometric or color
+separator from real buoys (see the aspect-ratio rejection and track-
+confirmation entries above).
+
+Distractors are overwhelmingly suppressed by both paths. Residual on the HSV
+path: the **olive panels occasionally bleed into green** (the documented
+hue-boundary risk - olive hue ~60-70 vs green 75-105), and one orange bled
+into red. No non-buoy "obstacle" reporting channel exists in the pipeline, so
+none was added (out of scope; physical avoidance is the USV's job). Harnesses:
+`tests/validation/gen_distractor_frames.py`, `tests/validation/test_distractor_suppression.py`.
 
 ---
 

@@ -97,6 +97,7 @@ class Track:
     kf: cv2.KalmanFilter
     missed: int
     flash: TrackFlashState = field(default_factory=TrackFlashState)
+    hits: int = 1  # consecutive-match count since creation; see --min-track-hits
 
 
 @dataclass
@@ -560,9 +561,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--yolo-size-tol-lo", type=float, default=0.5, help="Lower diameter fraction for --yolo-size-gate.")
     parser.add_argument("--yolo-size-tol-hi", type=float, default=2.0, help="Upper diameter fraction for --yolo-size-gate.")
     parser.add_argument(
-        "--yolo-min-circularity", type=float, default=0.0,
-        help="If >0, reject YOLO boxes whose crop-blob circularity is below this "
-        "(reject-only shape gate mirroring the HSV path). OFF (0.0) by default.",
+        "--yolo-min-circularity", type=float, default=0.5,
+        help="Reject YOLO boxes whose crop-blob circularity is below this "
+        "(reject-only shape gate mirroring the HSV path). Unlike --yolo-size-gate, "
+        "this needs no altitude assumption, so it defaults ON: measured on the "
+        "held-out val set at 0.950 precision vs 0.941 baseline, recall unchanged "
+        "at 1.000 (tests/validation/test_yolo_size_gate.py, circ50 mode; numbers "
+        "as of the 2026-09-17 GT fix -- course1_frame_1783758568617.jpg was "
+        "missing 2 real buoy labels, confirmed via GPS-projection cross-check "
+        "against the known course layout, see docs/07_roadmap.md). Pass 0 "
+        "to disable.",
     )
     parser.add_argument(
         "--save-video", action="store_true",
@@ -574,6 +582,20 @@ def parse_args() -> argparse.Namespace:
         "buoy reports (see mavlink_comms/) to udpout:<ip>:14555.",
     )
     parser.add_argument("--max-track-missed", type=int, default=8)
+    parser.add_argument(
+        "--min-track-hits", type=int, default=1,
+        help="Suppress CSV/GPS/MAVLink/overlay reporting for a track until it has "
+        "this many total matched frames. Default 1 = report on first sight (current "
+        "behaviour, unchanged). A one-off spurious detection (e.g. glare, a "
+        "distractor prop briefly crossing the color/shape gates) never gets a second "
+        "match at the same screen position, so it never crosses a threshold > 1 and "
+        "is silently dropped; a real buoy is seen for seconds at flight framerate, "
+        "so a couple of frames of reporting latency at track birth costs nothing. "
+        "Not measurable against the static single-image val set (no frame sequence "
+        "to accumulate hits from) -- validated instead with a synthetic frame "
+        "sequence, see tests/validation/test_track_confirmation.py. OFF (1) by "
+        "default pending a live/sim-video confirmation run.",
+    )
     parser.add_argument("--log-dir", type=str, default="detection_logs")
     parser.add_argument("--calib-color", type=str, default="red", choices=["red", "green", "blue"])
     return parser.parse_args()
@@ -900,8 +922,8 @@ def find_detections_yolo(
     included enough background). Root-causing and retraining fixed the real
     problem; the raw model output is the baseline.
 
-    Optional reject-only post-filters (both OFF unless the caller passes them;
-    the CLI only does so for --yolo-size-gate / --yolo-min-circularity):
+    Optional reject-only post-filters, both function-default OFF here (the
+    CLI defaults differ, see below):
       * expected-size gate: drop a box whose diameter is outside
         [size_tol[0], size_tol[1]] * expected_d, where
         expected_d = fx * target_diameter_m / altitude_m -- the same formula the
@@ -909,13 +931,30 @@ def find_detections_yolo(
       * circularity gate: drop a box whose crop-blob circularity is below
         min_circularity (see yolo_box_circularity).
     Unlike the reverted 2024 experiment these never *reclassify* a box, only
-    drop clear outliers. They default OFF because on this checkout's val set no
-    size or shape threshold separates the false positives from the true ones,
-    and the size gate at a realistic 10 m AGL would reject most genuine buoys
-    (sim balloons render at 55-149 px vs a 42 px expected_d) -- measured, see
-    tests/validation/test_yolo_size_gate.py and docs/07_roadmap.md. Turn them
-    on only
-    when --altitude-m / --target-diameter-m match the real capture geometry.
+    drop clear outliers.
+
+    Measured on the held-out val set (tests/validation/test_yolo_size_gate.py):
+    the size gate at a realistic 10 m AGL wrecks recall (1.000 -> 0.396),
+    because it assumes one fixed altitude/diameter but real buoys in this set
+    render at 55-149 px against a 42 px expected_d -- distance to the buoy
+    varies per frame, so a single static geometry can't separate FP diameters
+    (54-140 px) from TP diameters (55-149 px), which overlap almost entirely.
+    The CLI (--yolo-size-gate) stays OFF by default for this reason; turn it
+    on only once altitude is read live per-frame (e.g. from the rangefinder
+    model in simulink/) instead of the fixed --altitude-m flag.
+
+    The circularity gate has no altitude dependency and DOES help: circ50
+    (min_circularity=0.5) measured TP=96 FP=5 (vs FP=6 baseline), recall
+    unchanged at 1.000, precision 0.941 -> 0.950. The CLI defaults
+    --yolo-min-circularity to 0.5 for this reason.
+
+    Numbers as of 2026-09-17: course1_frame_1783758568617.jpg's GT label was
+    missing 2 real buoys (a genuine gate pair the HSV auto-labeler never
+    caught, confirmed by projecting both the labeled and the "extra" boxes to
+    real-world ground offsets and matching them to the known course layout to
+    within the height-parallax noise floor -- see docs/07_roadmap.md). Fixing
+    the label moved every one of these baselines; the previous numbers
+    (TP=94, FP=8/7, precision 0.922/0.931) are stale, not a regression.
     """
     result = model(frame_full, conf=conf_threshold, verbose=False)[0]
     boxes = result.boxes
@@ -986,6 +1025,7 @@ def update_tracks(
             meas = np.array([[det.cx_full], [det.cy_full]], np.float32)
             corr = track.kf.correct(meas)
             track.missed = 0
+            track.hits += 1
             track.flash.observe(True)  # P2: light seen this frame
             used_dets.add(best_idx)
             assigned.append((det, track.track_id, (float(corr[0, 0]), float(corr[1, 0]))))
@@ -1196,6 +1236,13 @@ def main() -> int:
                 flash_window=args.flash_window,
             )
             track_by_id = {t.track_id: t for t in tracks}
+            if args.min_track_hits > 1:
+                # Reject-only confirmation gate: the track keeps updating (Kalman
+                # state, flash-state history) either way, only reporting is delayed.
+                assigned = [
+                    a for a in assigned
+                    if track_by_id.get(a[1]) is not None and track_by_id[a[1]].hits >= args.min_track_hits
+                ]
 
             frame_out = frame_full.copy() if need_overlay else None
             image_path = ""
